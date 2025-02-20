@@ -1,6 +1,7 @@
 ﻿using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
+using GameplayEntities;
 using HarmonyLib;
 using LLBML.Players;
 using LLBML.States;
@@ -13,6 +14,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.Experimental.VFX;
 using UnityEngine.UI;
 
 namespace SuperRandom
@@ -50,7 +52,7 @@ namespace SuperRandom
             Logger = base.Logger;
             Instance = this;
             ConfigInit();
-            harmony.PatchAll();
+            harmony.PatchAll(typeof(AddPlayersToWorldPatch));
         }
 
         public void Start()
@@ -84,10 +86,35 @@ namespace SuperRandom
         }
 
 
+        public static List<PlayerEntity>[] playerEntities = new List<PlayerEntity>[4];
         public void FixedUpdate()
         {
+            Player.ForAllInMatch((Player player) => {
+                if (playerEntities[player.nr] != null)
+                {
 
+                    if (GameStates.IsInMatch() && Input.GetKeyDown(KeyCode.Q))
+                    {
+                        Logger.LogInfo("Swapping character");
+                        PlayerEntity oldEntity = player.playerEntity;
+                        
+                        var newPlayerEntity =
+                            playerEntities[player.nr][ControlledRandom.Get(0, 0,playerEntities[player.nr].Count)];
+
+                        player.playerEntity.SetPlayerState(PlayerState.DISABLED);
+
+                        player.Character = newPlayerEntity.character;
+                        
+
+                        PlayerHandler.instance.playerHandlerData.playerData[player.nr] = newPlayerEntity.playerData;
+                        player.playerEntity = newPlayerEntity;
+                        player.playerEntity.Spawn();
+                    }
+                }
+                
+            });
         }
+
 
 
 
@@ -129,6 +156,17 @@ namespace SuperRandom
             {
                
             }
+            Player.ForAllInMatch((Player player) => {
+                if (playerEntities[player.nr] != null)
+                {
+
+                    if (GameStates.IsInMatch())
+                    {
+                        
+                    }
+                }
+
+            });
 
         }
 
@@ -351,6 +389,7 @@ namespace SuperRandom
 
             allowRepeats = originalAllowRepeats;
             return selectedCharacters;
+            
         }
 
         private int WeightedRandomSelection(Dictionary<int, float> availableCharacters)
