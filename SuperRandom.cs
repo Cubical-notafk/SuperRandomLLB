@@ -4,6 +4,7 @@ using BepInEx.Logging;
 using GameplayEntities;
 using HarmonyLib;
 using LLBML.Players;
+using LLBML.Settings;
 using LLBML.States;
 using LLBML.Utils;
 using LLGUI;
@@ -31,18 +32,19 @@ namespace SuperRandom
         public static SuperRandom Instance { get; private set; } = null;
 
         public ConfigEntry<bool> superRandomOn;
-        public ConfigEntry<bool> allowRepeats;
+        
         public ConfigEntry<bool> useKarmicRandom;
         public ConfigEntry<bool> resetWeightButton;
 
         public LLButton superRandomButton;
 
+        public LLButton allowRepeatsButton;
+
 
         public ScreenPlayers sP;
 
         public PlayersCharacterButton pCB;
-
-        public LLButton characterButtons;
+      
 
         public GameObject characterButton;
 
@@ -79,7 +81,7 @@ namespace SuperRandom
         {
 
             superRandomOn = Config.Bind<bool>("Toggles", "SuperRandomOn", true);
-            allowRepeats = Config.Bind<bool>("Toggles", "AllowRepeats", true);
+            
             useKarmicRandom = Config.Bind<bool>("Toggles", "UseKarmicRandom", true);
             resetWeightButton = Config.Bind<bool>("Toggles", "ResetKarmaWeights", false);
 
@@ -133,6 +135,27 @@ namespace SuperRandom
                 CreateUI();
                 uiCreated = true;
 
+                if (sRToggled)
+                {
+                    superRandomButton.SetText("Super Random !!!");
+                    Debug.Log("Super Random is ON");
+                    OverlayButtonsON();
+                }
+                else
+                {
+                    superRandomButton.SetText("Super Random ???");
+                    Debug.Log("Super Random is OFF");
+                    OverlayButtonsOFF();
+                }
+
+                if (allowRepeats)
+                {
+                    allowRepeatsButton.SetText("Allow Repeats: ON");
+                }
+                else
+                {
+                    allowRepeatsButton.SetText("Allow Repeats: OFF");
+                }
             }
             else if (!GameStates.IsInLobby() && uiCreated)
             {
@@ -170,7 +193,7 @@ namespace SuperRandom
 
         }
 
-
+       
 
         
 
@@ -193,8 +216,19 @@ namespace SuperRandom
             RectTransform buttonRect = superRandomButton.GetComponent<RectTransform>();
             RectTransform referenceRect = sP.btOptions.GetComponent<RectTransform>();
 
-
             buttonRect.anchoredPosition = referenceRect.anchoredPosition + new Vector2(250, 0);
+
+            allowRepeatsButton = Instantiate(sP.btOptions, sP.btOptions.transform.parent);
+            allowRepeatsButton.name = "btAR";
+            allowRepeatsButton.SetText("Allow Repeats: OFF");
+
+            allowRepeatsButton.onClick = new LLClickable.ControlDelegate(SetAllowRepeats);
+
+
+            RectTransform buttonRect1 = allowRepeatsButton.GetComponent<RectTransform>();
+
+            buttonRect1.anchoredPosition = referenceRect.anchoredPosition + new Vector2(830, 0);
+            
 
         }
 
@@ -211,7 +245,7 @@ namespace SuperRandom
 
         public void HandleSuperRandomButtonClick(int playerNr)
         {
-
+            
 
             sRToggled = !sRToggled;
 
@@ -221,6 +255,9 @@ namespace SuperRandom
                 superRandomButton.SetText("Super Random !!!");
                 Debug.Log("Super Random is ON");
                 OverlayButtonsON();
+
+                GameStates.Send(Msg.SEL_CHAR, playerNr, (int)Character.RANDOM);
+
             }
             else
             {
@@ -231,13 +268,14 @@ namespace SuperRandom
         }
         public void OverlayButtonsON()
         {
-            float buttonOffset = 65f;
-            float leftShift = -375f;
+            float buttonOffset = 64f;
+            float leftShift = -384.5f;
             for (int i = 0; i < 13; i++)
             {
                 characterButton = Instantiate(sP.pfCharacterButton, sP.btOptions.transform.parent);
 
-                characterButton.transform.localPosition = new Vector3(i * buttonOffset + leftShift, -200f, 0f);
+                characterButton.transform.localPosition = new Vector3(i * buttonOffset + leftShift, -255f, 0f);
+                
                 characterButton.name = "CharacterButton_" + i;
 
 
@@ -246,7 +284,17 @@ namespace SuperRandom
 
                 int buttonIndex = i;
 
+                Image buttonImage = component.imCharacter;
+
+                buttonImage.color = Color.red;
+
                 component.btCharacter.onClick = new LLClickable.ControlDelegate((playerNr) => HandleOverlay(playerNr, buttonIndex, component));
+
+                if (addedCharacters.Contains(buttonIndex))
+                {
+                    buttonImage.color = Color.green;
+                }
+               
             }
         }
 
@@ -254,7 +302,7 @@ namespace SuperRandom
         {
             foreach (Transform child in sP.btOptions.transform.parent)
             {
-                // Disable buttons by name
+                
                 if (child.name.StartsWith("CharacterButton"))
                 {
                     child.gameObject.SetActive(false);
@@ -262,25 +310,50 @@ namespace SuperRandom
             }
         }
 
-        private List<int> addedCharacters = new List<int>();
+        public static List<int> addedCharacters = new List<int>();
         private Dictionary<int, float> characterWeights = new Dictionary<int, float>();
-        private bool addedCharacter;
+        
 
         private const float minWeight = 0.1f;
         private const float maxWeight = 5f;
         private const float decayFactor = 0.5f;
+        public static bool allowRepeats;
+        public static int numberOfStocks = 5;
 
-        private int numberOfStocks = 5;
 
 
-
-        public void SetNumberOfStocks(int newCount)
+        public static void SetNumberOfStocks()
         {
-            numberOfStocks = Mathf.Max(1, newCount);
+
+            if (!JOMBNFKIHIC.GIGAKBJGFDI.KOBEJOIALMO)
+            {
+                numberOfStocks = GameSettings.current.stocks;
+
+            }
+            else
+            {
+                if(GameSettings.current.points >= 13)
+                {
+                    numberOfStocks = 13;
+                }
+                
+            }
+
+
+            numberOfStocks = GameSettings.current.stocks;
+
         }
-        public void SetAllowRepeats(bool value)
+        public void SetAllowRepeats(int playerNr)
         {
-            allowRepeats.Value = value;
+            allowRepeats = !allowRepeats;
+            if(allowRepeats)
+            {
+                allowRepeatsButton.SetText("Allow Repeats: ON");
+            }
+            else 
+            {
+                allowRepeatsButton.SetText("Allow Repeats: OFF");
+            }
         }
         public void SetUseKarmicRandom(bool value)
         {
@@ -293,38 +366,26 @@ namespace SuperRandom
             Image buttonImage = component.imCharacter;
 
 
-            addedCharacter = !addedCharacter;
-
-            if (addedCharacter)
+            if (!addedCharacters.Contains(buttonIndex))
             {
-
-                if (!addedCharacters.Contains(buttonIndex))
-                {
-                    addedCharacters.Add(buttonIndex);
-                    characterWeights[buttonIndex] = 1f;
-
-
-
-                    buttonImage.color = Color.green;
-                }
+                addedCharacters.Add(buttonIndex);
+                characterWeights[buttonIndex] = 1f;
+                buttonImage.color = Color.green;
             }
-            else
+            else 
             {
-
-                if (addedCharacters.Contains(buttonIndex))
-                {
-                    addedCharacters.Remove(buttonIndex);
-                    characterWeights.Remove(buttonIndex);
-
-
-
-                    buttonImage.color = Color.red;
-                }
+                addedCharacters.Remove(buttonIndex);
+                characterWeights.Remove(buttonIndex);
+                buttonImage.color = Color.red;
             }
+            
+
+            
         }
+
         public List<int> GetRandomCharacters()
         {
-            return GetRandomCharacters(numberOfStocks, allowRepeats.Value, useKarmicRandom.Value);
+            return GetRandomCharacters(numberOfStocks, allowRepeats, useKarmicRandom.Value);
         }
 
 
