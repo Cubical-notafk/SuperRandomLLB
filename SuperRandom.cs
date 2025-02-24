@@ -193,11 +193,11 @@ namespace SuperRandom
 
         }
 
-       
 
-        
 
-        
+
+
+
 
         #region UIMaker
         public void CreateUI()
@@ -228,7 +228,7 @@ namespace SuperRandom
             RectTransform buttonRect1 = allowRepeatsButton.GetComponent<RectTransform>();
 
             buttonRect1.anchoredPosition = referenceRect.anchoredPosition + new Vector2(830, 0);
-            
+
 
         }
 
@@ -336,11 +336,14 @@ namespace SuperRandom
                 {
                     numberOfStocks = 13;
                 }
-                
+                else if(GameSettings.current.points <= 13)
+                {
+                    numberOfStocks = GameSettings.current.points;
+                }
             }
 
 
-            numberOfStocks = GameSettings.current.stocks;
+            
 
         }
         public void SetAllowRepeats(int playerNr)

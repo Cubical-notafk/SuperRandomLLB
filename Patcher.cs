@@ -1,5 +1,6 @@
 ﻿using GameplayEntities;
 using HarmonyLib;
+using JetBrains.Annotations;
 using LLBML.Players;
 using LLBML.Utils;
 using LLHandlers;
@@ -46,7 +47,6 @@ namespace SuperRandom
 
             }
 
-
         }
         private static void SetFirstCharacter(PlayerEntity __0)
         {
@@ -63,10 +63,11 @@ namespace SuperRandom
 
             SuperRandom.Logger.LogInfo("Set first player");
 
-            SuperRandom.playerEntities[player.nr].RemoveAt(0);
-
+            
         }
-        
+
+
+       
 
         [HarmonyPatch(typeof(PlayerEntity), "SetPlayerState")]
         [HarmonyPostfix]
@@ -80,7 +81,7 @@ namespace SuperRandom
             }
             else if (__0 == PlayerState.DEAD && JOMBNFKIHIC.GIGAKBJGFDI.KOBEJOIALMO == true)
             {
-                ResetNextCharacterPointVersion(__instance);
+                ResetNextCharacterPointsVersion(__instance);
                 ResetCorpse(__instance);
                 ResetHud(__instance);
             }
@@ -92,7 +93,6 @@ namespace SuperRandom
             GameObject.Destroy(playerInfo.transform.GetChild(count - 1).gameObject);
             playerInfo.SetPlayer(__instance.player, 12);
         }
-       
 
         private static void ResetNextCharacter(PlayerEntity currentEntity)
         {
@@ -108,7 +108,6 @@ namespace SuperRandom
             if (SuperRandom.playerEntities[player.nr] == null)
             {
                 return;
-
             }
 
             var entityList = SuperRandom.playerEntities[playerNr];
@@ -126,18 +125,9 @@ namespace SuperRandom
             entityList.RemoveAt(1);
 
         }
-
-        private static void ResetCorpse(PlayerEntity player)
+        private static void ResetNextCharacterPointsVersion(PlayerEntity currentEntity)
         {
-            CorpseEntity corpse = World.instance.itemHandler.corpseItems[player.playerIndex];
-            corpse.visualTable.Remove("main");
-            GameObject.Destroy(corpse.transform.GetChild(0).gameObject);
-            corpse.SetCharacter(player.character, player.variant);
 
-        }
-
-        private static void ResetNextCharacterPointVersion(PlayerEntity currentEntity)
-        {
             SuperRandom.Logger.LogInfo("ResetNextCharacter starting");
 
             Player player = currentEntity.player;
@@ -149,16 +139,11 @@ namespace SuperRandom
             if (SuperRandom.playerEntities[player.nr] == null)
             {
                 return;
-
             }
 
             var entityList = SuperRandom.playerEntities[playerNr];
 
-
             var newPlayerEntity = SuperRandom.playerEntities[player.nr][ControlledRandom.Get(0, 0, SuperRandom.playerEntities[player.nr].Count)];
-
-            var newPlayerEntity1 = entityList[0];
-
 
             newPlayerEntity.playerData.stocks = currentEntity.playerData.stocks;
 
@@ -168,12 +153,18 @@ namespace SuperRandom
 
             PlayerHandler.instance.playerHandlerData.playerData[playerNr] = newPlayerEntity.playerData;
 
-
-            entityList.RemoveAt(0);
+            
 
         }
 
-        
+        private static void ResetCorpse(PlayerEntity player)
+        {
+            CorpseEntity corpse = World.instance.itemHandler.corpseItems[player.playerIndex];
+            corpse.visualTable.Remove("main");
+            GameObject.Destroy(corpse.transform.GetChild(0).gameObject);
+            corpse.SetCharacter(player.character, player.variant);
+
+        }
 
 
 
@@ -194,19 +185,12 @@ namespace SuperRandom
             playerEntity.playerIndex = player.nr;
             instance.playerHandlerData.playerData[player.nr].team = player.Team;
 
-            
-
             foreach (var ball in BallHandler.instance.balls)
             {
 
                 if (playerEntity.character == Character.CANDY)
                 {
-
-                    SuperRandom.Logger.LogInfo("Adding Candy Anims");
-                    AddCandyAnims(ball, playerEntity);
-
                     AddCandyAnims();
-
                 }
                 if (playerEntity.character == Character.SKATE)
                 {
@@ -231,192 +215,134 @@ namespace SuperRandom
 
             return playerEntity;
         }
-
-        public static void AddCandyAnims(BallEntity ball, PlayerEntity playerEntity)
+        public static void AddCandyAnims()
         {
 
-            HashSet<CharacterVariant> candies = new HashSet<CharacterVariant>();
-            if (playerEntity.character == Character.CANDY)
+        }
+        public static void AddJetBubble(BallEntity ball)
+        {
+            ball.SetVisualSprite("bubbleVisual", "bubble", false, false, new JKMAAHELEMF(256, 256), default(JKMAAHELEMF), 0f, true, 0f, Layer.GAMEPLAY, default(Color32));
+            ball.SetScale(0.7f, "bubbleVisual");
+            ball.GetVisual("bubbleVisual").flipMode = FlipMode.NOT_AUTO;
+            ball.GetVisual("bubbleVisual").SetAllMaterialsRenderQueue(1998);
+        }
+
+        private static Character IndextoCharacter(Player player, int index)
+        {
+
+            switch (index)
             {
-                SuperRandom.Logger.LogInfo("Adding Candy Variants");
-                candies.Add(playerEntity.variant);
-            }
-            ball.candyballs.Clear();
-            ball.hatTf = new Transform[candies.Count];
-            int num = 0;
-            foreach (CharacterVariant characterVariant in candies)
-            { 
-                string text = "candyBall" + (int)characterVariant + "Visual";
-                SuperRandom.Logger.LogInfo($"Adding VisualText {text}");
-                AOOJOMIECLD aoojomiecld = JPLELOFJOOH.NEBGBODHHCG(Character.CANDY, characterVariant);
-                DLC dlc = EPCDKLCABNC.LEMKFOAAMKA(Character.CANDY, characterVariant);
-                string text2 = aoojomiecld.KGFMPDNFIEC()[0];
-                AOOJOMIECLD modelValues;
-                if (dlc == DLC.CANDY_SATURN)
-                {
-                    modelValues = AOOJOMIECLD.HCFBCKBLLAH(dlc, "candyBallSaturn", new string[]
-                    {
-                        text2
-                    }, 1f, 0, FKBHNEMDBMK.NMJDMHNMDNJ);
-                }
-                else if (characterVariant == CharacterVariant.MODEL_ALT || characterVariant == CharacterVariant.MODEL_ALT2)
-                {
-                    modelValues = AOOJOMIECLD.HCFBCKBLLAH(Character.CANDY, "candyBallStrait", new string[]
-                    {
-                        text2
-                    }, 1f, 0, FKBHNEMDBMK.NMJDMHNMDNJ);
-                }
-                else
-                {
-                    modelValues = AOOJOMIECLD.HCFBCKBLLAH(Character.CANDY, "candyBall", new string[]
-                    {
-                        text2
-                    }, 1f, 0, FKBHNEMDBMK.NMJDMHNMDNJ);
-                }
-                if (dlc != DLC.NONE)
-                {
-                    modelValues.EDKLFODCINA = new Bundle(dlc);
-                }
-                ball.SetVisualModel(text, modelValues, true, true);
-                ball.GetVisual(text).flipMode = FlipMode.NOT_AUTO;
-                ball.candyballs.Add(text);
-                Transform transform = ball.GetVisual(text).gameObject.transform;
-                ball.hatTf[num] = transform.Find("centerhead/hat001");
-                num++;
+                case 0:
+
+
+                    return Character.GRAF;
+
+                case 1:
+
+                    return Character.ELECTRO;
+
+                case 2:
+
+                    return Character.PONG;
+
+                case 3:
+
+                    return Character.CROC;
+
+                case 4:
+
+                    return Character.BOOM;
+
+                case 5:
+
+                    return Character.ROBOT;
+
+                case 6:
+
+                    return player.GetRandomCharacter();
+
+                case 7:
+
+                    return Character.KID;
+
+                case 8:
+
+                    return Character.CANDY;
+
+                case 9:
+
+                    return Character.SKATE;
+
+                case 10:
+
+                    return Character.BOSS;
+
+                case 11:
+
+                    return Character.COP;
+
+                case 12:
+
+                    return Character.BAG;
+
+                default:
+
+                    return Character.KID;
+
             }
         }
-            public static void AddCandyAnims()
-            {
 
+        private static PlayerEntity CharacterToModel(Character character, int playerIndex)
+        {
+            GameObject gameObject = new GameObject();
+            PlayerEntity playerEntity;
+            gameObject.name = $"Extra_{character}_{playerIndex}";
+            switch (character)
+            {
+                case Character.KID:
+                    return playerEntity = gameObject.AddComponent<KidPlayerModel>();
+
+                case Character.ROBOT:
+                    return playerEntity = gameObject.AddComponent<RobotPlayerModel>();
+
+                case Character.CANDY:
+                    return playerEntity = gameObject.AddComponent<CandyPlayerModel>();
+
+                case Character.BOOM:
+                    return playerEntity = gameObject.AddComponent<BoomPlayerModel>();
+
+                case Character.CROC:
+                    return playerEntity = gameObject.AddComponent<CrocPlayerModel>();
+
+                case Character.PONG:
+                    return playerEntity = gameObject.AddComponent<PongPlayerModel>();
+
+                case Character.BOSS:
+                    return playerEntity = gameObject.AddComponent<BossPlayerModel>();
+
+                case Character.COP:
+                    return playerEntity = gameObject.AddComponent<CopPlayerModel>();
+
+                case Character.ELECTRO:
+                    return playerEntity = gameObject.AddComponent<ElectroPlayerModel>();
+
+                case Character.SKATE:
+                    return playerEntity = gameObject.AddComponent<SkatePlayerModel>();
+
+                case Character.GRAF:
+                    return playerEntity = gameObject.AddComponent<GrafPlayerModel>();
+
+                case Character.BAG:
+                    return playerEntity = gameObject.AddComponent<BagPlayerModel>();
+
+                default:
+                    return playerEntity = gameObject.AddComponent<KidPlayerModel>();
 
             }
-            public static void AddJetBubble(BallEntity ball)
-            {
-                ball.SetVisualSprite("bubbleVisual", "bubble", false, false, new JKMAAHELEMF(256, 256), default(JKMAAHELEMF), 0f, true, 0f, Layer.GAMEPLAY, default(Color32));
-                ball.SetScale(0.7f, "bubbleVisual");
-                ball.GetVisual("bubbleVisual").flipMode = FlipMode.NOT_AUTO;
-                ball.GetVisual("bubbleVisual").SetAllMaterialsRenderQueue(1998);
-            }
 
-            private static Character IndextoCharacter(Player player, int index)
-            {
-
-                switch (index)
-                {
-                    case 0:
-
-
-                        return Character.GRAF;
-
-                    case 1:
-
-                        return Character.ELECTRO;
-
-                    case 2:
-
-                        return Character.PONG;
-
-                    case 3:
-
-                        return Character.CROC;
-
-                    case 4:
-
-                        return Character.BOOM;
-
-                    case 5:
-
-                        return Character.ROBOT;
-
-                    case 6:
-
-                        return player.GetRandomCharacter();
-
-                    case 7:
-
-                        return Character.KID;
-
-                    case 8:
-
-                        return Character.CANDY;
-
-                    case 9:
-
-                        return Character.SKATE;
-
-                    case 10:
-
-                        return Character.BOSS;
-
-                    case 11:
-
-                        return Character.COP;
-
-                    case 12:
-
-                        return Character.BAG;
-
-                    default:
-
-                        return Character.KID;
-
-                }
-            }
-
-            private static PlayerEntity CharacterToModel(Character character, int playerIndex)
-            {
-                GameObject gameObject = new GameObject();
-                PlayerEntity playerEntity;
-                gameObject.name = $"Extra_{character}_{playerIndex}";
-                switch (character)
-                {
-                    case Character.KID:
-                        return playerEntity = gameObject.AddComponent<KidPlayerModel>();
-
-                    case Character.ROBOT:
-                        return playerEntity = gameObject.AddComponent<RobotPlayerModel>();
-
-                    case Character.CANDY:
-                        return playerEntity = gameObject.AddComponent<CandyPlayerModel>();
-
-                    case Character.BOOM:
-                        return playerEntity = gameObject.AddComponent<BoomPlayerModel>();
-
-                    case Character.CROC:
-                        return playerEntity = gameObject.AddComponent<CrocPlayerModel>();
-
-                    case Character.PONG:
-                        return playerEntity = gameObject.AddComponent<PongPlayerModel>();
-
-                    case Character.BOSS:
-                        return playerEntity = gameObject.AddComponent<BossPlayerModel>();
-
-                    case Character.COP:
-                        return playerEntity = gameObject.AddComponent<CopPlayerModel>();
-
-                    case Character.ELECTRO:
-                        return playerEntity = gameObject.AddComponent<ElectroPlayerModel>();
-
-                    case Character.SKATE:
-                        return playerEntity = gameObject.AddComponent<SkatePlayerModel>();
-
-                    case Character.GRAF:
-                        return playerEntity = gameObject.AddComponent<GrafPlayerModel>();
-
-                    case Character.BAG:
-                        return playerEntity = gameObject.AddComponent<BagPlayerModel>();
-
-                    default:
-                        return playerEntity = gameObject.AddComponent<KidPlayerModel>();
-
-                }
-
-            }
         }
     }
-
-
-
+}
 
 
 
