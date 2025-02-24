@@ -1,6 +1,5 @@
 ﻿using GameplayEntities;
 using HarmonyLib;
-using JetBrains.Annotations;
 using LLBML.Players;
 using LLBML.Utils;
 using LLHandlers;
@@ -63,11 +62,11 @@ namespace SuperRandom
 
             SuperRandom.Logger.LogInfo("Set first player");
 
-            
+
         }
 
 
-       
+
 
         [HarmonyPatch(typeof(PlayerEntity), "SetPlayerState")]
         [HarmonyPostfix]
@@ -153,7 +152,7 @@ namespace SuperRandom
 
             PlayerHandler.instance.playerHandlerData.playerData[playerNr] = newPlayerEntity.playerData;
 
-            
+
 
         }
 
@@ -190,7 +189,7 @@ namespace SuperRandom
 
                 if (playerEntity.character == Character.CANDY)
                 {
-                    AddCandyAnims();
+                    AddCandyAnims(ball);
                 }
                 if (playerEntity.character == Character.SKATE)
                 {
@@ -215,9 +214,60 @@ namespace SuperRandom
 
             return playerEntity;
         }
-        public static void AddCandyAnims()
+        public static void AddCandyAnims(BallEntity ball)
         {
+            HashSet<CharacterVariant> candies = new HashSet<CharacterVariant>();
 
+            ALDOKEMAOMB.ICOCPAFKCCE(delegate (ALDOKEMAOMB player)
+            {
+                if (player.LALEEFJMMLH == Character.CANDY)
+                {
+                    candies.Add(player.AIINAIDBHJI);
+                }
+
+                ball.candyballs.Clear();
+                ball.hatTf = new Transform[candies.Count];
+                int num = 0;
+                foreach (CharacterVariant characterVariant in candies)
+                {
+                    string text = "candyBall" + (int)characterVariant + "Visual";
+                    AOOJOMIECLD aoojomiecld = JPLELOFJOOH.NEBGBODHHCG(Character.CANDY, characterVariant);
+                    DLC dlc = EPCDKLCABNC.LEMKFOAAMKA(Character.CANDY, characterVariant);
+                    string text2 = aoojomiecld.KGFMPDNFIEC()[0];
+                    AOOJOMIECLD modelValues;
+                    if (dlc == DLC.CANDY_SATURN)
+                    {
+                        modelValues = AOOJOMIECLD.HCFBCKBLLAH(dlc, "candyBallSaturn", new string[]
+                        {
+                        text2
+                        }, 1f, 0, FKBHNEMDBMK.NMJDMHNMDNJ);
+                    }
+                    else if (characterVariant == CharacterVariant.MODEL_ALT || characterVariant == CharacterVariant.MODEL_ALT2)
+                    {
+                        modelValues = AOOJOMIECLD.HCFBCKBLLAH(Character.CANDY, "candyBallStrait", new string[]
+                        {
+                        text2
+                        }, 1f, 0, FKBHNEMDBMK.NMJDMHNMDNJ);
+                    }
+                    else
+                    {
+                        modelValues = AOOJOMIECLD.HCFBCKBLLAH(Character.CANDY, "candyBall", new string[]
+                        {
+                        text2
+                        }, 1f, 0, FKBHNEMDBMK.NMJDMHNMDNJ);
+                    }
+                    if (dlc != DLC.NONE)
+                    {
+                        modelValues.EDKLFODCINA = new Bundle(dlc);
+                    }
+                    ball.SetVisualModel(text, modelValues, true, true);
+                    ball.GetVisual(text).flipMode = FlipMode.NOT_AUTO;
+                    ball.candyballs.Add(text);
+                    Transform transform = ball.GetVisual(text).gameObject.transform;
+                    ball.hatTf[num] = transform.Find("centerhead/hat001");
+                    num++;
+                }
+            });
         }
         public static void AddJetBubble(BallEntity ball)
         {
