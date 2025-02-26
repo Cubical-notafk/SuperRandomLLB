@@ -3,6 +3,7 @@ using BepInEx.Configuration;
 using BepInEx.Logging;
 using GameplayEntities;
 using HarmonyLib;
+using LLBML.GameEvents;
 using LLBML.Players;
 using LLBML.Settings;
 using LLBML.States;
@@ -44,9 +45,11 @@ namespace SuperRandom
         public ScreenPlayers sP;
 
         public PlayersCharacterButton pCB;
-      
+        public static List<int> randomCharacters = new List<int>();
 
         public GameObject characterButton;
+
+        public static List<PlayerEntity>[] playerEntities = new List<PlayerEntity>[4];
 
         public void Awake()
         {
@@ -55,6 +58,15 @@ namespace SuperRandom
             Instance = this;
             ConfigInit();
             harmony.PatchAll(typeof(AddPlayersToWorldPatch));
+            LobbyEvents.OnStageSelectOpen += (o, a) =>
+            {
+                if (sRToggled == true)
+                {
+                    randomCharacters = GetRandomCharacters();
+                }
+                Logger.LogInfo("randomCharacters has been set");
+
+            };
         }
 
         public void Start()
@@ -88,7 +100,6 @@ namespace SuperRandom
         }
 
 
-        public static List<PlayerEntity>[] playerEntities = new List<PlayerEntity>[4];
         public void FixedUpdate()
         {
             Player.ForAllInMatch((Player player) => {

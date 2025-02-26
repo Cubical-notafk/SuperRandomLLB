@@ -4,7 +4,9 @@ using LLBML.Players;
 using LLBML.Utils;
 using LLHandlers;
 using LLScreen;
+using System;
 using System.Collections.Generic;
+using System.Reflection.Emit;
 using UnityEngine;
 
 namespace SuperRandom
@@ -12,19 +14,23 @@ namespace SuperRandom
 
     public static class AddPlayersToWorldPatch
     {
-
+        
 
         [HarmonyPatch(typeof(PlayerHandler), nameof(PlayerHandler.AddPlayersToWorld))]
         [HarmonyPostfix]
         public static void AddPlayersToWorld_Postfix(PlayerHandler __instance)
         {
             SuperRandom.SetNumberOfStocks();
-            var randomCharacters = SuperRandom.Instance.GetRandomCharacters();
+            var randomCharacters = SuperRandom.randomCharacters;
             Player player = Player.GetPlayer(0);
 
 
             if (player.IsInMatch)
             {
+                if (SuperRandom.randomCharacters == null)
+                {
+                    return;
+                }
                 var newEntities = new List<PlayerEntity>()
                 {
 
@@ -49,7 +55,10 @@ namespace SuperRandom
         }
         private static void SetFirstCharacter(PlayerEntity __0)
         {
-
+            if(SuperRandom.randomCharacters == null)
+            {
+                return;
+            }
             Player player = __0.player;
             int playerNr = player.nr;
 
@@ -174,22 +183,21 @@ namespace SuperRandom
 
             PlayerEntity playerEntity = CharacterToModel(characters, player.nr);
 
-
-
-
-
             playerEntity.character = characters;
             playerEntity.variant = player.variant;
             playerEntity.player = player;
             playerEntity.playerIndex = player.nr;
             instance.playerHandlerData.playerData[player.nr].team = player.Team;
 
+            bool hasAddedCandyAnims = false;
+
             foreach (var ball in BallHandler.instance.balls)
             {
 
-                if (playerEntity.character == Character.CANDY)
+                if (playerEntity.character == Character.CANDY && hasAddedCandyAnims == false)
                 {
-                    AddCandyAnims(ball);
+
+                    hasAddedCandyAnims = true;
                 }
                 if (playerEntity.character == Character.SKATE)
                 {
@@ -197,6 +205,8 @@ namespace SuperRandom
                     AddJetBubble(ball);
                 }
             }
+
+
 
             var newPlayerData = new PlayerData(6);
             newPlayerData.Load(instance.playerHandlerData.playerData[player.nr]);
@@ -214,60 +224,89 @@ namespace SuperRandom
 
             return playerEntity;
         }
-        public static void AddCandyAnims(BallEntity ball)
+
+        [HarmonyPatch(typeof(BallEntity), nameof(BallEntity.AddExtraBallVisuals))]
+        [HarmonyTranspiler]
+        [HarmonyDebug]
+        static IEnumerable<CodeInstruction> AddExtraVisual_Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator iL)
         {
-            HashSet<CharacterVariant> candies = new HashSet<CharacterVariant>();
+            CodeMatcher cm = new CodeMatcher(instructions, iL);
 
-            ALDOKEMAOMB.ICOCPAFKCCE(delegate (ALDOKEMAOMB player)
+            cm.MatchForward(true,
+                new CodeMatch(OpCodes.Ldloc_0),
+                new CodeMatch(OpCodes.Ldc_I4_0),
+                new CodeMatch(OpCodes.Stfld),
+                new CodeMatch(OpCodes.Ldloc_0),
+                new CodeMatch(OpCodes.Ldc_I4_0),
+                new CodeMatch(OpCodes.Stfld),
+                new CodeMatch(OpCodes.Ldloc_0),
+                new CodeMatch(OpCodes.Newobj),
+                new CodeMatch(OpCodes.Stfld)
+                );
+            PatchUtils.LogInstruction(cm.Instruction);
+            var candies_fld = cm.Operand;
+
+
+            cm.MatchForward(false,
+                new CodeMatch(OpCodes.Ldloc_0),
+                new CodeMatch(OpCodes.Ldftn),
+                new CodeMatch(OpCodes.Newobj),
+                new CodeMatch(OpCodes.Call),
+                new CodeMatch(OpCodes.Ldarg_0),
+                new CodeMatch(OpCodes.Ldfld),
+                new CodeMatch(OpCodes.Callvirt)
+
+                );
+
+            cm.Advance(1);
+
+            try
             {
-                if (player.LALEEFJMMLH == Character.CANDY)
-                {
-                    candies.Add(player.AIINAIDBHJI);
-                }
+                cm.Insert(
+                    new CodeInstruction(OpCodes.Ldloc_0),
+                    Transpilers.EmitDelegate<Func<HashSet<CharacterVariant>>>(AddCandyAnims),
+                    new CodeInstruction(OpCodes.Stfld, candies_fld)
+                    );
+            }
+            catch (Exception e)
+            {
+                SuperRandom.Logger.LogError($"Error {e}");
+            }
 
-                ball.candyballs.Clear();
-                ball.hatTf = new Transform[candies.Count];
-                int num = 0;
-                foreach (CharacterVariant characterVariant in candies)
+
+
+
+            return cm.InstructionEnumeration();
+        }
+
+        public static HashSet<CharacterVariant> AddCandyAnims()
+        {
+            SuperRandom.Logger.LogInfo("starting");
+            var randomCharacters = SuperRandom.randomCharacters;
+            HashSet<CharacterVariant> variants = new HashSet<CharacterVariant>();
+            Player player = Player.GetPlayer(0);
+            List<PlayerEntity> entitiesList = new List<PlayerEntity>();
+            SuperRandom.Logger.LogInfo("part 1");
+            foreach (var character in randomCharacters)
+            {
+                SuperRandom.Logger.LogInfo("part 2");
+                var characters = IndextoCharacter(player, character);
+                entitiesList.Add(CharacterToModel(characters, player.nr));
+                SuperRandom.Logger.LogInfo("part 3");
+                foreach (var entity in entitiesList)
                 {
-                    string text = "candyBall" + (int)characterVariant + "Visual";
-                    AOOJOMIECLD aoojomiecld = JPLELOFJOOH.NEBGBODHHCG(Character.CANDY, characterVariant);
-                    DLC dlc = EPCDKLCABNC.LEMKFOAAMKA(Character.CANDY, characterVariant);
-                    string text2 = aoojomiecld.KGFMPDNFIEC()[0];
-                    AOOJOMIECLD modelValues;
-                    if (dlc == DLC.CANDY_SATURN)
+                    if (entity.character == Character.CANDY)
                     {
-                        modelValues = AOOJOMIECLD.HCFBCKBLLAH(dlc, "candyBallSaturn", new string[]
+                        if (!variants.Contains(entity.variant))
                         {
-                        text2
-                        }, 1f, 0, FKBHNEMDBMK.NMJDMHNMDNJ);
+                            variants.Add(entity.variant);
+
+                        }
                     }
-                    else if (characterVariant == CharacterVariant.MODEL_ALT || characterVariant == CharacterVariant.MODEL_ALT2)
-                    {
-                        modelValues = AOOJOMIECLD.HCFBCKBLLAH(Character.CANDY, "candyBallStrait", new string[]
-                        {
-                        text2
-                        }, 1f, 0, FKBHNEMDBMK.NMJDMHNMDNJ);
-                    }
-                    else
-                    {
-                        modelValues = AOOJOMIECLD.HCFBCKBLLAH(Character.CANDY, "candyBall", new string[]
-                        {
-                        text2
-                        }, 1f, 0, FKBHNEMDBMK.NMJDMHNMDNJ);
-                    }
-                    if (dlc != DLC.NONE)
-                    {
-                        modelValues.EDKLFODCINA = new Bundle(dlc);
-                    }
-                    ball.SetVisualModel(text, modelValues, true, true);
-                    ball.GetVisual(text).flipMode = FlipMode.NOT_AUTO;
-                    ball.candyballs.Add(text);
-                    Transform transform = ball.GetVisual(text).gameObject.transform;
-                    ball.hatTf[num] = transform.Find("centerhead/hat001");
-                    num++;
                 }
-            });
+            }
+            return variants;
+
         }
         public static void AddJetBubble(BallEntity ball)
         {
@@ -283,7 +322,6 @@ namespace SuperRandom
             switch (index)
             {
                 case 0:
-
 
                     return Character.GRAF;
 
