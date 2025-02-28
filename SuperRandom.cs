@@ -145,25 +145,25 @@ namespace SuperRandom
 
         public void Update()
         {
-            
+
 
             if (GameStates.IsInLobby())
             {
                 if (!uiCreated)
                 {
-                    sP ??= FindObjectOfType<ScreenPlayers>(); 
+                    sP ??= FindObjectOfType<ScreenPlayers>();
 
                     if (sP != null)
                     {
                         CreateUI();
                         uiCreated = true;
 
-                        ApplyUIState(); 
+                        ApplyUIState();
 
                         if (sRToggled)
                         {
                             EnableSuperRandomMode();
-                            
+
                         }
                     }
                 }
@@ -192,7 +192,7 @@ namespace SuperRandom
             if (emptyParent == null)
             {
                 emptyParent = new GameObject("SuperRandomParent", typeof(RectTransform));
-               
+
             }
 
             var parent = sP.btOptions.transform.parent;
@@ -200,7 +200,7 @@ namespace SuperRandom
             emptyParent.SetActive(true);
             emptyParent.transform.localScale = Vector3.one;
 
-            
+
             Player.ForAll((Player player) =>
             {
                 Debug.Log($"OverlayButtonsON called for Player {player.nr}");
@@ -208,7 +208,7 @@ namespace SuperRandom
                 GameStates.Send(Msg.SEL_CHAR, player.nr, (int)Character.RANDOM);
             });
 
-            
+
 
             if (resetWeightButton.Value)
             {
@@ -607,6 +607,3 @@ namespace SuperRandom
 
 
         }
-
-    }
-}
