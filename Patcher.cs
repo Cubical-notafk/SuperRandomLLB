@@ -4,8 +4,8 @@ using LLBML.Players;
 using LLBML.Utils;
 using LLHandlers;
 using LLScreen;
-using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Reflection.Emit;
 using UnityEngine;
 
@@ -14,51 +14,40 @@ namespace SuperRandom
 
     public static class AddPlayersToWorldPatch
     {
-        
+
 
         [HarmonyPatch(typeof(PlayerHandler), nameof(PlayerHandler.AddPlayersToWorld))]
         [HarmonyPostfix]
         public static void AddPlayersToWorld_Postfix(PlayerHandler __instance)
         {
-            SuperRandom.SetNumberOfStocks();
-            var randomCharacters = SuperRandom.randomCharacters;
-            Player player = Player.GetPlayer(0);
 
-
-            if (player.IsInMatch)
+            Player.ForAllInMatch((Player player) =>
             {
-                if (SuperRandom.randomCharacters == null)
-                {
-                    return;
-                }
                 var newEntities = new List<PlayerEntity>()
                 {
 
                 };
-
-                foreach (var character in randomCharacters)
+                foreach (var character in SuperRandom.randomCharacters[player.nr])
                 {
                     PlayerEntity extraCharacter = CreateExtraEntity(__instance, player, character);
                     extraCharacter.SetPlayerState(PlayerState.STANDBY);
                     __instance.world.AddEntity(extraCharacter);
                     newEntities.Add(extraCharacter);
                 }
+
                 SuperRandom.playerEntities[player.nr] = newEntities;
 
                 PlayerEntity playerEntity = player.playerEntity;
                 SetFirstCharacter(playerEntity);
 
 
+            });
 
-            }
 
         }
         private static void SetFirstCharacter(PlayerEntity __0)
         {
-            if(SuperRandom.randomCharacters == null)
-            {
-                return;
-            }
+
             Player player = __0.player;
             int playerNr = player.nr;
 
@@ -174,38 +163,59 @@ namespace SuperRandom
 
         }
 
+        private static bool JetInList()
+        {
+            bool found = false;
+            Player.ForAllInMatch((Player player) =>
+            {
+
+                if (SuperRandom.randomCharacters[player.nr].Contains(Character.SKATE))
+                {
+                    found = true;
+                }
+            });
+
+            return found;
+
+        }
+
+        private static bool CopDetectiveInList()
+        {
+            bool found = false;
+            Player.ForAllInMatch((Player player) =>
+            {
+
+                if (SuperRandom.randomCharacters[player.nr].Contains(Character.COP) && (player.variant == CharacterVariant.MODEL_ALT || player.variant == CharacterVariant.MODEL_ALT2))
+                    found = true;
+            });
+            return found;
+        }
+        private static bool CopLuchaInList()
+        {
+            bool found = false;
+            Player.ForAllInMatch((Player player) =>
+            {
+
+                if (EPCDKLCABNC.LEMKFOAAMKA(Character.COP, player.variant) == DLC.COP_LUCHA)
+                    found = true;
+            });
+            return found;
+        }
 
 
-        private static PlayerEntity CreateExtraEntity(PlayerHandler instance, Player player, int character)
+
+        private static PlayerEntity CreateExtraEntity(PlayerHandler instance, Player player, Character character)
         {
 
-            Character characters = IndextoCharacter(player, character);
 
-            PlayerEntity playerEntity = CharacterToModel(characters, player.nr);
 
-            playerEntity.character = characters;
+            PlayerEntity playerEntity = CharacterToModel(character, player.nr);
+
+            playerEntity.character = character;
             playerEntity.variant = player.variant;
             playerEntity.player = player;
             playerEntity.playerIndex = player.nr;
             instance.playerHandlerData.playerData[player.nr].team = player.Team;
-
-            bool hasAddedCandyAnims = false;
-
-            foreach (var ball in BallHandler.instance.balls)
-            {
-
-                if (playerEntity.character == Character.CANDY && hasAddedCandyAnims == false)
-                {
-
-                    hasAddedCandyAnims = true;
-                }
-                if (playerEntity.character == Character.SKATE)
-                {
-
-                    AddJetBubble(ball);
-                }
-            }
-
 
 
             var newPlayerData = new PlayerData(6);
@@ -225,6 +235,21 @@ namespace SuperRandom
             return playerEntity;
         }
 
+        [HarmonyPatch(typeof(ALDOKEMAOMB), nameof(ALDOKEMAOMB.CHDHDGAHNPB))]
+        [HarmonyTranspiler]
+        static IEnumerable<CodeInstruction> ChangeRandomVariant(IEnumerable<CodeInstruction> instructions)
+        {
+            CodeMatcher cm = new CodeMatcher(instructions);
+            cm.SearchForward(iL => iL.opcode == OpCodes.Stfld && ((FieldInfo)iL.operand).Name == nameof(ALDOKEMAOMB.AIINAIDBHJI))
+                .Advance(-3);
+
+            cm.RemoveInstructions(3);
+
+            cm.Insert(new CodeInstruction(OpCodes.Ldc_I4_S, (sbyte)CharacterVariant.MODEL_ALT3));
+
+            return cm.InstructionEnumeration();
+        }
+
         [HarmonyPatch(typeof(BallEntity), nameof(BallEntity.AddExtraBallVisuals))]
         [HarmonyTranspiler]
         [HarmonyDebug]
@@ -232,46 +257,34 @@ namespace SuperRandom
         {
             CodeMatcher cm = new CodeMatcher(instructions, iL);
 
-            cm.MatchForward(true,
-                new CodeMatch(OpCodes.Ldloc_0),
-                new CodeMatch(OpCodes.Ldc_I4_0),
-                new CodeMatch(OpCodes.Stfld),
-                new CodeMatch(OpCodes.Ldloc_0),
-                new CodeMatch(OpCodes.Ldc_I4_0),
-                new CodeMatch(OpCodes.Stfld),
-                new CodeMatch(OpCodes.Ldloc_0),
-                new CodeMatch(OpCodes.Newobj),
-                new CodeMatch(OpCodes.Stfld)
-                );
-            PatchUtils.LogInstruction(cm.Instruction);
-            var candies_fld = cm.Operand;
+            cm.SearchForward(i => i.opcode == OpCodes.Stfld && ((FieldInfo)i.operand).Name == "skate");
 
-
-            cm.MatchForward(false,
-                new CodeMatch(OpCodes.Ldloc_0),
-                new CodeMatch(OpCodes.Ldftn),
-                new CodeMatch(OpCodes.Newobj),
-                new CodeMatch(OpCodes.Call),
-                new CodeMatch(OpCodes.Ldarg_0),
-                new CodeMatch(OpCodes.Ldfld),
-                new CodeMatch(OpCodes.Callvirt)
-
+            cm.Advance(-1)
+                .Set(
+                OpCodes.Call, AccessTools.Method(typeof(AddPlayersToWorldPatch), "JetInList")
                 );
 
-            cm.Advance(1);
+            cm.SearchForward(i => i.opcode == OpCodes.Stfld && ((FieldInfo)i.operand).Name == "cop_detective");
 
-            try
-            {
-                cm.Insert(
-                    new CodeInstruction(OpCodes.Ldloc_0),
-                    Transpilers.EmitDelegate<Func<HashSet<CharacterVariant>>>(AddCandyAnims),
-                    new CodeInstruction(OpCodes.Stfld, candies_fld)
-                    );
-            }
-            catch (Exception e)
-            {
-                SuperRandom.Logger.LogError($"Error {e}");
-            }
+            cm.Advance(-1)
+                .Set(
+                OpCodes.Call, AccessTools.Method(typeof(AddPlayersToWorldPatch), "CopDetectiveInList")
+                );
+
+            cm.SearchForward(i => i.opcode == OpCodes.Stfld && ((FieldInfo)i.operand).Name == "candies");
+
+            cm.Advance(-1)
+                .Set(
+                OpCodes.Call, AccessTools.Method(typeof(AddPlayersToWorldPatch), "AddCandyAnims")
+                );
+
+            cm.SearchForward(i => i.opcode == OpCodes.Stfld && ((FieldInfo)i.operand).Name == "cop_lucha");
+
+            cm.Advance(-1)
+                .Set(
+                OpCodes.Call, AccessTools.Method(typeof(AddPlayersToWorldPatch), "CopLuchaInList")
+                );
+
 
 
 
@@ -281,104 +294,19 @@ namespace SuperRandom
 
         public static HashSet<CharacterVariant> AddCandyAnims()
         {
-            SuperRandom.Logger.LogInfo("starting");
-            var randomCharacters = SuperRandom.randomCharacters;
-            HashSet<CharacterVariant> variants = new HashSet<CharacterVariant>();
             Player player = Player.GetPlayer(0);
-            List<PlayerEntity> entitiesList = new List<PlayerEntity>();
-            SuperRandom.Logger.LogInfo("part 1");
-            foreach (var character in randomCharacters)
+            var playerVariants = player.variant;
+
+            SuperRandom.Logger.LogInfo("AddingCandyAnims");
+            HashSet<CharacterVariant> candies = new HashSet<CharacterVariant>();
+            foreach (var character in SuperRandom.randomCharacters)
             {
-                SuperRandom.Logger.LogInfo("part 2");
-                var characters = IndextoCharacter(player, character);
-                entitiesList.Add(CharacterToModel(characters, player.nr));
-                SuperRandom.Logger.LogInfo("part 3");
-                foreach (var entity in entitiesList)
-                {
-                    if (entity.character == Character.CANDY)
-                    {
-                        if (!variants.Contains(entity.variant))
-                        {
-                            variants.Add(entity.variant);
-
-                        }
-                    }
-                }
-            }
-            return variants;
-
-        }
-        public static void AddJetBubble(BallEntity ball)
-        {
-            ball.SetVisualSprite("bubbleVisual", "bubble", false, false, new JKMAAHELEMF(256, 256), default(JKMAAHELEMF), 0f, true, 0f, Layer.GAMEPLAY, default(Color32));
-            ball.SetScale(0.7f, "bubbleVisual");
-            ball.GetVisual("bubbleVisual").flipMode = FlipMode.NOT_AUTO;
-            ball.GetVisual("bubbleVisual").SetAllMaterialsRenderQueue(1998);
-        }
-
-        private static Character IndextoCharacter(Player player, int index)
-        {
-
-            switch (index)
-            {
-                case 0:
-
-                    return Character.GRAF;
-
-                case 1:
-
-                    return Character.ELECTRO;
-
-                case 2:
-
-                    return Character.PONG;
-
-                case 3:
-
-                    return Character.CROC;
-
-                case 4:
-
-                    return Character.BOOM;
-
-                case 5:
-
-                    return Character.ROBOT;
-
-                case 6:
-
-                    return player.GetRandomCharacter();
-
-                case 7:
-
-                    return Character.KID;
-
-                case 8:
-
-                    return Character.CANDY;
-
-                case 9:
-
-                    return Character.SKATE;
-
-                case 10:
-
-                    return Character.BOSS;
-
-                case 11:
-
-                    return Character.COP;
-
-                case 12:
-
-                    return Character.BAG;
-
-                default:
-
-                    return Character.KID;
+                candies.Add(playerVariants);
 
             }
+            return candies;
         }
+
 
         private static PlayerEntity CharacterToModel(Character character, int playerIndex)
         {
