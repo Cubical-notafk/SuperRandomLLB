@@ -11,7 +11,6 @@ using LLBML.Utils;
 using LLGUI;
 using LLHandlers;
 using LLScreen;
-using SuperRandomLLB;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -41,7 +40,7 @@ namespace SuperRandom
         public LLButton allowRepeatsButton;
 
 
-        public ScreenPlayers sP;
+        public static ScreenPlayers sP;
 
         public PlayersCharacterButton pCB;
         public static List<Character>[] randomCharacters = new List<Character>[4];
@@ -57,25 +56,16 @@ namespace SuperRandom
             Instance = this;
             ConfigInit();
             harmony.PatchAll(typeof(AddPlayersToWorldPatch));
-            LobbyEvents.OnStageSelectOpen += (o, a) =>
-            {
-                if (sRToggled == true)
-                {
+            LobbyEvents.OnLobbyEntered += LobbyEvents_OnLobbyEntered;
+            Networking.Init();
 
-                    SetNumberOfStocks();
-                    Player.ForAllInMatch((Player player) =>
-                    {
-                        if (player.nr == -1)
-                        {
-                            player.nr = 0;
-                        }
-                        randomCharacters[player.nr] = GetRandomCharacters(player.nr);
-                    });
-                    Logger.LogInfo("randomCharacters has been set");
 
-                }
+        }
+        
+        private void LobbyEvents_OnLobbyEntered(object source, LobbyEventArgs e)
+        {
 
-            };
+            
         }
 
         public void Start()
@@ -147,41 +137,11 @@ namespace SuperRandom
         {
 
 
-            if (GameStates.IsInLobby())
-            {
-                if (!uiCreated)
-                {
-                    sP ??= FindObjectOfType<ScreenPlayers>();
 
-                    if (sP != null)
-                    {
-                        CreateUI();
-                        uiCreated = true;
-
-                        ApplyUIState();
-
-                        if (sRToggled)
-                        {
-                            EnableSuperRandomMode();
-
-                        }
-                    }
-                }
-            }
-            else if (uiCreated)
-            {
-                DestroyUI();
-            }
-        }
-        private void ApplyUIState()
-        {
-            if (allowRepeatsButton != null)
-            {
-                allowRepeatsButton.SetText(allowRepeats ? "Allow Repeats: ON" : "Allow Repeats: OFF");
-            }
         }
 
-        private void EnableSuperRandomMode()
+
+        public void EnableSuperRandomMode()
         {
 
             if (superRandomButton != null)
@@ -201,12 +161,18 @@ namespace SuperRandom
             emptyParent.transform.localScale = Vector3.one;
 
 
-            Player.ForAll((Player player) =>
-            {
-                Debug.Log($"OverlayButtonsON called for Player {player.nr}");
-                OverlayButtonsON(player.nr);
-                GameStates.Send(Msg.SEL_CHAR, player.nr, (int)Character.RANDOM);
-            });
+
+
+            var playerNr = Player.GetLocalPlayer().nr;
+
+            Logger.LogInfo("running overlaybuttons");
+
+            OverlayButtonsON(playerNr);
+
+
+
+
+
 
 
 
@@ -224,10 +190,7 @@ namespace SuperRandom
             if (superRandomButton == null || !superRandomButton.gameObject.activeInHierarchy)
             {
 
-                if (superRandomButton != null)
-                {
-                    Destroy(superRandomButton.gameObject);
-                }
+
 
 
 
@@ -235,7 +198,7 @@ namespace SuperRandom
                 superRandomButton.name = "btSR";
                 superRandomButton.SetText("Super Random ???");
 
-                superRandomButton.onClick = new LLClickable.ControlDelegate(HandleSuperRandomButtonClick);
+                superRandomButton.onClick = delegate(int pNr) { Logger.LogInfo($"{pNr} clicked"); };
 
 
                 RectTransform buttonRect = superRandomButton.GetComponent<RectTransform>();
@@ -246,6 +209,8 @@ namespace SuperRandom
                 allowRepeatsButton = Instantiate(sP.btOptions, sP.btOptions.transform.parent);
                 allowRepeatsButton.name = "btAR";
                 allowRepeatsButton.SetText("Allow Repeats: OFF");
+                allowRepeatsButton.SetActive(false);
+                allowRepeatsButton.visible = false;
 
                 allowRepeatsButton.onClick = new LLClickable.ControlDelegate(SetAllowRepeats);
 
@@ -259,28 +224,12 @@ namespace SuperRandom
         }
 
 
-        private void DestroyUI()
-        {
-            if (superRandomButton != null)
-            {
-                Destroy(superRandomButton.gameObject);
-                superRandomButton = null;
-            }
 
-            if (allowRepeatsButton != null)
-            {
-                Destroy(allowRepeatsButton.gameObject);
-                allowRepeatsButton = null;
-            }
-
-            sP = null;
-            uiCreated = false;
-        }
         #endregion
 
 
 
-        private bool sRToggled = false;
+        public static bool sRToggled = false;
 
         public void HandleSuperRandomButtonClick(int playerNr)
         {
@@ -308,11 +257,15 @@ namespace SuperRandom
                 Debug.Log("Super Random is ON");
                 OverlayButtonsON(playerNr);
 
+                allowRepeatsButton.SetActive(true);
+                allowRepeatsButton.visible = true;
                 GameStates.Send(Msg.SEL_CHAR, playerNr, (int)Character.RANDOM);
 
             }
             else
             {
+                allowRepeatsButton.SetActive(false);
+                allowRepeatsButton.visible = false;
                 emptyParent.SetActive(false);
                 superRandomButton.SetText("Super Random ???");
                 Debug.Log("Super Random is OFF");
@@ -337,7 +290,7 @@ namespace SuperRandom
             Character.CROC,
             Character.BOOM,
             Character.ROBOT,
-            player.GetRandomCharacter(),
+            Character.DUMMY,
             Character.KID,
             Character.CANDY,
             Character.SKATE,
@@ -366,6 +319,31 @@ namespace SuperRandom
 
             float buttonOffset = 64f;
             float leftShift = -384.5f;
+            float yPosition = 0f;
+            Vector3 buttonScale = Vector3.one;
+            switch (playerNr)
+            {
+                case 0: // Player 1
+                    leftShift = -384.5f;
+                    yPosition = -255f;
+                    buttonScale = new Vector3(1, 1, 1f);
+                    break;
+                case 1: // Player 2
+                    leftShift = -280f;
+                    yPosition = 100f;
+                    buttonScale = new Vector3(0.65f, 0.65f, 1f);
+                    break;
+                case 2: // Player 3
+                    leftShift = -260f;
+                    yPosition = -280f;
+                    buttonScale = new Vector3(0.6f, 0.6f, 1f);
+                    break;
+                default: // Fallback
+                    leftShift = -300f;
+                    yPosition = -200f;
+                    buttonScale = new Vector3(0.75f, 0.75f, 1f);
+                    break;
+            }
             for (int i = 0; i < orderedCharacters.Length; i++)
             {
                 Character character = orderedCharacters[i];
@@ -373,19 +351,29 @@ namespace SuperRandom
 
 
                 characterButton = Instantiate(sP.pfCharacterButton, emptyParent.transform);
-                characterButton.transform.localPosition = new Vector3(i * buttonOffset + leftShift, -255f, 0f);
+                characterButton.transform.localPosition = new Vector3(i * buttonOffset + leftShift, yPosition, 0f);
                 characterButton.name = "CharacterButton_" + character;
 
                 PlayersCharacterButton component = characterButton.GetComponent<PlayersCharacterButton>();
 
-                component.Init(_characters[i]);
                 Image buttonImage = component.imCharacter;
 
                 Image bgImage = component.gameObject.transform.GetChild(0).GetChild(0).GetChild(0).GetComponent<Image>();
 
+                if (character == Character.DUMMY)
+                {
+                    buttonImage.sprite = JPLELOFJOOH.CCGLCPJGPHJ(Character.RANDOM);
+                    bgImage.color = Color.blue;
+                    continue;
+                }
+                component.character = _characters[i];
+                component.imCharacter.sprite = JPLELOFJOOH.CCGLCPJGPHJ(component.character);
 
                 buttonImage.color = Color.Lerp(Color.white, Color.black, 0.75f);
                 bgImage.color = Color.red;
+
+
+
 
                 component.btCharacter.onClick = new LLClickable.ControlDelegate((pnr) => HandleOverlay(playerNr, character, component));
 
@@ -480,6 +468,7 @@ namespace SuperRandom
             Image buttonImage = component.imCharacter;
             Image bgImage = component.gameObject.transform.GetChild(0).GetChild(0).GetChild(0).GetComponent<Image>();
 
+
             if (!addedCharacters[playerNr].Contains(character))
             {
                 addedCharacters[playerNr].Add(character);
@@ -490,6 +479,7 @@ namespace SuperRandom
             }
             else
             {
+                Logger.LogInfo($"Removed {character}");
                 addedCharacters[playerNr].Remove(character);
                 characterWeights.Remove(character);
                 buttonImage.color = Color.Lerp(Color.white, Color.black, 0.75f);
@@ -498,6 +488,11 @@ namespace SuperRandom
 
 
 
+
+        }
+        public static List<Character> GetRandomChars(int playerNr)
+        {
+            return SuperRandom.Instance.GetRandomCharacters(playerNr);
         }
 
         public List<Character> GetRandomCharacters(int playerNr)
@@ -607,3 +602,5 @@ namespace SuperRandom
 
 
         }
+    }
+}

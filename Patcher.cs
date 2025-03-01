@@ -20,30 +20,56 @@ namespace SuperRandom
         [HarmonyPostfix]
         public static void AddPlayersToWorld_Postfix(PlayerHandler __instance)
         {
-
-            Player.ForAllInMatch((Player player) =>
+            if (SuperRandom.sRToggled == true)
             {
-                var newEntities = new List<PlayerEntity>()
+
+                SuperRandom.Logger.LogInfo("AddPlayersToWorld Running");
+                Player.ForAllInMatch((Player player) =>
                 {
+                    if (SuperRandom.randomCharacters[player.nr].Count != 0)
+                    {
+                        var newEntities = new List<PlayerEntity>()
+                        {
 
-                };
-                foreach (var character in SuperRandom.randomCharacters[player.nr])
-                {
-                    PlayerEntity extraCharacter = CreateExtraEntity(__instance, player, character);
-                    extraCharacter.SetPlayerState(PlayerState.STANDBY);
-                    __instance.world.AddEntity(extraCharacter);
-                    newEntities.Add(extraCharacter);
-                }
+                        };
+                        foreach (var character in SuperRandom.randomCharacters[player.nr])
+                        {
+                            PlayerEntity extraCharacter = CreateExtraEntity(__instance, player, character);
+                            extraCharacter.SetPlayerState(PlayerState.STANDBY);
+                            __instance.world.AddEntity(extraCharacter);
+                            newEntities.Add(extraCharacter);
+                        }
 
-                SuperRandom.playerEntities[player.nr] = newEntities;
+                        SuperRandom.playerEntities[player.nr] = newEntities;
 
-                PlayerEntity playerEntity = player.playerEntity;
-                SetFirstCharacter(playerEntity);
+                        PlayerEntity playerEntity = player.playerEntity;
+                        SetFirstCharacter(playerEntity);
+                    }
+
+                });
+            }
+
+        }
+        [HarmonyPatch(typeof(PlayersSelection), nameof(PlayersSelection.Init))]
+        [HarmonyPostfix]
+        private static void Init(int _playerNr)
+        {
+            SuperRandom.Instance.CreateUI();
+
+            if (SuperRandom.sRToggled)
+            {
+                SuperRandom.Instance.EnableSuperRandomMode();
+
+            }
+        }
 
 
-            });
-
-
+        [HarmonyPatch(typeof(ScreenPlayers), nameof(ScreenPlayers.OnOpen))]
+        [HarmonyPrefix]
+        private static void Prefix_OnOpen(ScreenPlayers __instance)
+        {
+            SuperRandom.sP = __instance;
+            
         }
         private static void SetFirstCharacter(PlayerEntity __0)
         {
@@ -70,17 +96,21 @@ namespace SuperRandom
         [HarmonyPostfix]
         public static void Postfix(PlayerEntity __instance, PlayerState __0)
         {
-            if (__0 == PlayerState.DEAD && !JOMBNFKIHIC.GIGAKBJGFDI.KOBEJOIALMO)
+            if (SuperRandom.sRToggled)
             {
-                ResetNextCharacter(__instance);
-                ResetCorpse(__instance);
-                ResetHud(__instance);
-            }
-            else if (__0 == PlayerState.DEAD && JOMBNFKIHIC.GIGAKBJGFDI.KOBEJOIALMO == true)
-            {
-                ResetNextCharacterPointsVersion(__instance);
-                ResetCorpse(__instance);
-                ResetHud(__instance);
+
+                if (__0 == PlayerState.DEAD && !JOMBNFKIHIC.GIGAKBJGFDI.KOBEJOIALMO)
+                {
+                    ResetNextCharacter(__instance);
+                    ResetCorpse(__instance);
+                    ResetHud(__instance);
+                }
+                else if (__0 == PlayerState.DEAD && JOMBNFKIHIC.GIGAKBJGFDI.KOBEJOIALMO == true)
+                {
+                    ResetNextCharacterPointsVersion(__instance);
+                    ResetCorpse(__instance);
+                    ResetHud(__instance);
+                }
             }
         }
         private static void ResetHud(PlayerEntity __instance)
@@ -94,6 +124,7 @@ namespace SuperRandom
         private static void ResetNextCharacter(PlayerEntity currentEntity)
         {
 
+
             SuperRandom.Logger.LogInfo("ResetNextCharacter starting");
 
             Player player = currentEntity.player;
@@ -104,12 +135,18 @@ namespace SuperRandom
 
             if (SuperRandom.playerEntities[player.nr] == null)
             {
+                SuperRandom.Logger.LogInfo($"playerEntities list is null");
                 return;
             }
 
             var entityList = SuperRandom.playerEntities[playerNr];
+            if (entityList.Count <= 1)
+            {
+                return;
+            }
 
             var newPlayerEntity = entityList[1];
+
 
             newPlayerEntity.playerData.stocks = currentEntity.playerData.stocks;
 
@@ -168,7 +205,10 @@ namespace SuperRandom
             bool found = false;
             Player.ForAllInMatch((Player player) =>
             {
-
+                if (SuperRandom.randomCharacters[player.nr] == null)
+                {
+                    return;
+                }
                 if (SuperRandom.randomCharacters[player.nr].Contains(Character.SKATE))
                 {
                     found = true;
@@ -184,7 +224,10 @@ namespace SuperRandom
             bool found = false;
             Player.ForAllInMatch((Player player) =>
             {
-
+                if (SuperRandom.randomCharacters[player.nr] == null)
+                {
+                    return;
+                }
                 if (SuperRandom.randomCharacters[player.nr].Contains(Character.COP) && (player.variant == CharacterVariant.MODEL_ALT || player.variant == CharacterVariant.MODEL_ALT2))
                     found = true;
             });
@@ -195,7 +238,10 @@ namespace SuperRandom
             bool found = false;
             Player.ForAllInMatch((Player player) =>
             {
-
+                if (SuperRandom.randomCharacters[player.nr] == null)
+                {
+                    return;
+                }
                 if (EPCDKLCABNC.LEMKFOAAMKA(Character.COP, player.variant) == DLC.COP_LUCHA)
                     found = true;
             });
@@ -294,16 +340,23 @@ namespace SuperRandom
 
         public static HashSet<CharacterVariant> AddCandyAnims()
         {
-            Player player = Player.GetPlayer(0);
-            var playerVariants = player.variant;
-
-            SuperRandom.Logger.LogInfo("AddingCandyAnims");
             HashSet<CharacterVariant> candies = new HashSet<CharacterVariant>();
-            foreach (var character in SuperRandom.randomCharacters)
-            {
-                candies.Add(playerVariants);
 
-            }
+            Player.ForAllInMatch((Player player) =>
+            {
+                if (SuperRandom.randomCharacters[player.nr] == null)
+                {
+                    return;
+                }
+                var playerVariants = player.variant;
+
+                SuperRandom.Logger.LogInfo("AddingCandyAnims");
+                foreach (var character in SuperRandom.randomCharacters[player.nr])
+                {
+                    candies.Add(playerVariants);
+
+                }
+            });
             return candies;
         }
 
