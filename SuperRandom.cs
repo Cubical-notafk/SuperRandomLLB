@@ -34,6 +34,8 @@ namespace SuperRandom
 
         public ConfigEntry<bool> useKarmicRandom;
         public ConfigEntry<bool> resetWeightButton;
+        public ConfigEntry<KeyCode> SwapCharacterInTrainingKey;
+        public ConfigEntry<KeyCode> ResetWeightsKey;
 
         public LLButton superRandomButton;
 
@@ -55,7 +57,7 @@ namespace SuperRandom
             Logger = base.Logger;
             Instance = this;
             ConfigInit();
-            harmony.PatchAll(typeof(AddPlayersToWorldPatch));
+            harmony.PatchAll();
             LobbyEvents.OnLobbyEntered += LobbyEvents_OnLobbyEntered;
             Networking.Init();
 
@@ -95,37 +97,18 @@ namespace SuperRandom
 
             useKarmicRandom = Config.Bind<bool>("Toggles", "UseKarmicRandom", true);
             resetWeightButton = Config.Bind<bool>("Toggles", "ResetKarmaWeights", false);
-
+            SwapCharacterInTrainingKey = Config.Bind("Keybinds", "swapCharacterInTrainingKey", KeyCode.Q);
+            ResetWeightsKey = Config.Bind("Keybinds", "resetWeightsKey", KeyCode.W);
         }
 
 
         public void FixedUpdate()
         {
-            Player.ForAllInMatch((Player player) =>
-            {
-                if (playerEntities[player.nr] != null)
-                {
-
-                    if (GameStates.IsInMatch() && Input.GetKeyDown(KeyCode.Q))
-                    {
-                        Logger.LogInfo("Swapping character");
-                        PlayerEntity oldEntity = player.playerEntity;
-
-                        var newPlayerEntity =
-                            playerEntities[player.nr][ControlledRandom.Get(0, 0, playerEntities[player.nr].Count)];
-
-                        player.playerEntity.SetPlayerState(PlayerState.DISABLED);
-
-                        player.Character = newPlayerEntity.character;
+            
 
 
-                        PlayerHandler.instance.playerHandlerData.playerData[player.nr] = newPlayerEntity.playerData;
-                        player.playerEntity = newPlayerEntity;
-                        player.playerEntity.Spawn();
-                    }
-                }
 
-            });
+           
         }
 
 
@@ -135,7 +118,29 @@ namespace SuperRandom
 
         public void Update()
         {
+            if (JOMBNFKIHIC.GIGAKBJGFDI.PNJOKAICMNN == GameMode.TRAINING)
+            {
+                Player player = Player.GetPlayer(0);
 
+                if (randomCharacters != null)
+                {
+
+                    if (Input.GetKeyDown(SwapCharacterInTrainingKey.Value))
+                    {
+                        player.playerEntity.playerData.deaths++;
+                        if(player.playerEntity.playerData.deaths >= 4)
+                        {
+                            player.playerEntity.playerData.deaths = 0;
+                        }
+                        AddPlayersToWorldPatch.ResetNextCharacter(player.playerEntity);
+                        player.playerEntity.Spawn();
+                    }
+                }
+            }
+            if (GameStates.IsInLobby() && Input.GetKeyDown(ResetWeightsKey.Value))
+            {
+                ResetWeights();
+            }
 
 
         }
@@ -189,7 +194,7 @@ namespace SuperRandom
         {
             if (superRandomButton == null || !superRandomButton.gameObject.activeInHierarchy)
             {
-
+               
 
 
 
@@ -198,7 +203,7 @@ namespace SuperRandom
                 superRandomButton.name = "btSR";
                 superRandomButton.SetText("Super Random ???");
 
-                superRandomButton.onClick = delegate(int pNr) { Logger.LogInfo($"{pNr} clicked"); };
+                superRandomButton.onClick = new LLClickable.ControlDelegate(HandleSuperRandomButtonClick);
 
 
                 RectTransform buttonRect = superRandomButton.GetComponent<RectTransform>();
@@ -233,6 +238,8 @@ namespace SuperRandom
 
         public void HandleSuperRandomButtonClick(int playerNr)
         {
+             playerNr = Player.GetLocalPlayer().nr;
+
             if (playerNr == -1)
             {
                 playerNr = 0;
@@ -276,6 +283,7 @@ namespace SuperRandom
 
         public void OverlayButtonsON(int playerNr)
         {
+            playerNr = Player.GetLocalPlayer().nr;
             Debug.Log($"OverlayButtonsON called for Player {playerNr}");
             if (playerNr == -1)
             {
@@ -329,19 +337,19 @@ namespace SuperRandom
                     buttonScale = new Vector3(1, 1, 1f);
                     break;
                 case 1: // Player 2
-                    leftShift = -280f;
-                    yPosition = 100f;
-                    buttonScale = new Vector3(0.65f, 0.65f, 1f);
+                    leftShift = -384.5f;
+                    yPosition = -255f;
+                    buttonScale = new Vector3(1, 1, 1f);
                     break;
                 case 2: // Player 3
-                    leftShift = -260f;
-                    yPosition = -280f;
-                    buttonScale = new Vector3(0.6f, 0.6f, 1f);
+                    leftShift = -384.5f;
+                    yPosition = -255f;
+                    buttonScale = new Vector3(1, 1, 1f);
                     break;
                 default: // Fallback
-                    leftShift = -300f;
-                    yPosition = -200f;
-                    buttonScale = new Vector3(0.75f, 0.75f, 1f);
+                    leftShift = -384.5f;
+                    yPosition = -255f;
+                    buttonScale = new Vector3(1, 1, 1f);
                     break;
             }
             for (int i = 0; i < orderedCharacters.Length; i++)
@@ -471,6 +479,7 @@ namespace SuperRandom
 
             if (!addedCharacters[playerNr].Contains(character))
             {
+                Logger.LogInfo($"Added {character} character for {playerNr}");
                 addedCharacters[playerNr].Add(character);
                 characterWeights[character] = 1f;
                 buttonImage.color = Color.white;
