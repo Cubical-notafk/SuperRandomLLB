@@ -189,7 +189,7 @@ namespace SuperRandom
         {
             if (superRandomButton == null || !superRandomButton.gameObject.activeInHierarchy)
             {
-
+               
 
 
 
@@ -198,7 +198,7 @@ namespace SuperRandom
                 superRandomButton.name = "btSR";
                 superRandomButton.SetText("Super Random ???");
 
-                superRandomButton.onClick = delegate(int pNr) { Logger.LogInfo($"{pNr} clicked"); };
+                superRandomButton.onClick = new LLClickable.ControlDelegate(HandleSuperRandomButtonClick);
 
 
                 RectTransform buttonRect = superRandomButton.GetComponent<RectTransform>();
@@ -233,6 +233,8 @@ namespace SuperRandom
 
         public void HandleSuperRandomButtonClick(int playerNr)
         {
+             playerNr = Player.GetLocalPlayer().nr;
+
             if (playerNr == -1)
             {
                 playerNr = 0;
@@ -276,6 +278,7 @@ namespace SuperRandom
 
         public void OverlayButtonsON(int playerNr)
         {
+            playerNr = Player.GetLocalPlayer().nr;
             Debug.Log($"OverlayButtonsON called for Player {playerNr}");
             if (playerNr == -1)
             {
@@ -471,6 +474,7 @@ namespace SuperRandom
 
             if (!addedCharacters[playerNr].Contains(character))
             {
+                Logger.LogInfo($"Added {character} character for {playerNr}");
                 addedCharacters[playerNr].Add(character);
                 characterWeights[character] = 1f;
                 buttonImage.color = Color.white;

@@ -102,6 +102,10 @@ namespace SuperRandom
                     characterList.Add((Character)br.ReadInt32());
                 }
             }
+            foreach(Character character in characterList)
+            {
+                SuperRandom.Logger.LogInfo($"{character} in {msg.playerNr} list");
+            }
             SuperRandom.randomCharacters[msg.playerNr] = characterList;
         }
     }

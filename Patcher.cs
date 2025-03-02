@@ -90,8 +90,6 @@ namespace SuperRandom
         }
 
 
-
-
         [HarmonyPatch(typeof(PlayerEntity), "SetPlayerState")]
         [HarmonyPostfix]
         public static void Postfix(PlayerEntity __instance, PlayerState __0)
@@ -115,6 +113,7 @@ namespace SuperRandom
         }
         private static void ResetHud(PlayerEntity __instance)
         {
+            SuperRandom.Logger.LogInfo("Resetting Hud starting");
             var playerInfo = ScreenGameHud.instance.playerInfos[__instance.playerIndex];
             int count = playerInfo.transform.childCount;
             GameObject.Destroy(playerInfo.transform.GetChild(count - 1).gameObject);
@@ -131,7 +130,7 @@ namespace SuperRandom
 
             int playerNr = player.nr;
 
-            SuperRandom.Logger.LogInfo($"Player +{player.nr} has died");
+            SuperRandom.Logger.LogInfo($"Player {player.nr} has died");
 
             if (SuperRandom.playerEntities[player.nr] == null)
             {
@@ -140,23 +139,31 @@ namespace SuperRandom
             }
 
             var entityList = SuperRandom.playerEntities[playerNr];
-            if (entityList.Count <= 1)
+
+            SuperRandom.Logger.LogInfo($"current death count : {currentEntity.playerData.deaths}");
+            
+            if (currentEntity.playerData.deaths > SuperRandom.numberOfStocks)
             {
                 return;
             }
 
-            var newPlayerEntity = entityList[1];
+            var newPlayerEntity = entityList[currentEntity.playerData.deaths];
 
 
             newPlayerEntity.playerData.stocks = currentEntity.playerData.stocks;
 
+            newPlayerEntity.playerData.deaths = currentEntity.playerData.deaths;
+            SuperRandom.Logger.LogInfo($"new death count : {newPlayerEntity.playerData.deaths}");
 
             player.Character = newPlayerEntity.character;
+
+            SuperRandom.Logger.LogInfo($"Setting {player.nr} to {player.Character}");
+
             player.playerEntity = newPlayerEntity;
 
             PlayerHandler.instance.playerHandlerData.playerData[playerNr] = newPlayerEntity.playerData;
 
-            entityList.RemoveAt(1);
+            
 
         }
         private static void ResetNextCharacterPointsVersion(PlayerEntity currentEntity)
@@ -193,6 +200,7 @@ namespace SuperRandom
 
         private static void ResetCorpse(PlayerEntity player)
         {
+            SuperRandom.Logger.LogInfo("Resetting corpse starting");
             CorpseEntity corpse = World.instance.itemHandler.corpseItems[player.playerIndex];
             corpse.visualTable.Remove("main");
             GameObject.Destroy(corpse.transform.GetChild(0).gameObject);
@@ -280,7 +288,7 @@ namespace SuperRandom
 
             return playerEntity;
         }
-
+        //DAIO CRIMES
         [HarmonyPatch(typeof(ALDOKEMAOMB), nameof(ALDOKEMAOMB.CHDHDGAHNPB))]
         [HarmonyTranspiler]
         static IEnumerable<CodeInstruction> ChangeRandomVariant(IEnumerable<CodeInstruction> instructions)
