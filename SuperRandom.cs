@@ -41,7 +41,6 @@ namespace SuperRandom
 
         public LLButton allowRepeatsButton;
 
-
         public static ScreenPlayers sP;
 
         public PlayersCharacterButton pCB;
