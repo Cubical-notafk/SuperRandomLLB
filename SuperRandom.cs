@@ -38,7 +38,6 @@ namespace SuperRandom
         public ConfigEntry<KeyCode> ResetWeightsKey;
 
         public LLButton superRandomButton;
-
         public LLButton allowRepeatsButton;
 
         public static ScreenPlayers sP;
