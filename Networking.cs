@@ -23,22 +23,22 @@ namespace SuperRandom
         }
         private static void GetRandomList()
         {
-            if (SuperRandom.sRToggled == true)
+            if (SuperRandomTweak.sRToggled == true)
             {
 
-                SuperRandom.SetNumberOfStocks();
+                SuperRandomTweak.SetNumberOfStocks();
                 Player.ForAllInMatch((Player player) =>
                 {
                     if (player.nr == -1)
                     {
                         player.nr = 0;
                     }
-                    SuperRandom.randomCharacters[player.nr] = SuperRandom.GetRandomChars(player.nr);
+                    SuperRandomTweak.randomCharacters[player.nr] = SuperRandomTweak.GetRandomChars(player.nr);
                 });
-                SuperRandom.Logger.LogInfo("randomCharacters has been set");
-                foreach(var character in SuperRandom.randomCharacters)
+                SuperRandomTweak.Logger.LogInfo("randomCharacters has been set");
+                foreach(var character in SuperRandomTweak.randomCharacters)
                 {
-                    SuperRandom.Logger.LogInfo($"{character}");
+                    SuperRandomTweak.Logger.LogInfo($"{character}");
 
                 }
 
@@ -53,22 +53,22 @@ namespace SuperRandom
 
             Player.ForAllInMatch((Player player) =>
             {
-                if (SuperRandom.randomCharacters[player.nr] == null)
+                if (SuperRandomTweak.randomCharacters[player.nr] == null)
                 {
-                    SuperRandom.Logger.LogInfo($"{player.nr} list is null");
+                    SuperRandomTweak.Logger.LogInfo($"{player.nr} list is null");
                     return;
                 }
-                if (SuperRandom.randomCharacters[player.nr].Count == 0)
+                if (SuperRandomTweak.randomCharacters[player.nr].Count == 0)
                 {
-                    SuperRandom.Logger.LogInfo($"{player.nr} list is empty");
+                    SuperRandomTweak.Logger.LogInfo($"{player.nr} list is empty");
                     return;
                 }
                 if (player.peer != null)
                 {
                     if (player.IsLocalPeer == true)
                     {
-                        SuperRandom.Logger.LogInfo($"{player.nr} getting ready to send");
-                        SendCharacterList(SuperRandom.randomCharacters[player.nr]);
+                        SuperRandomTweak.Logger.LogInfo($"{player.nr} getting ready to send");
+                        SendCharacterList(SuperRandomTweak.randomCharacters[player.nr]);
 
                     }
                 }
@@ -78,7 +78,7 @@ namespace SuperRandom
 
         public static void SendCharacterList(List<Character> characterList)
         {
-            SuperRandom.Logger.LogInfo("Sending CharacterList");
+            SuperRandomTweak.Logger.LogInfo("Sending CharacterList");
             byte[] array;
             using (MemoryStream ms = new())
             using (BinaryWriter bw = new(ms))
@@ -96,7 +96,7 @@ namespace SuperRandom
 
         public static void RecieveCharacterList(Message msg)
         {
-            SuperRandom.Logger.LogInfo("Retrieving CharacterList");
+            SuperRandomTweak.Logger.LogInfo("Retrieving CharacterList");
             byte[] array = (byte[])msg.ob;
             List<Character> characterList = new List<Character>();
             using (MemoryStream ms = new(array))
@@ -109,9 +109,9 @@ namespace SuperRandom
             }
             foreach(Character character in characterList)
             {
-                SuperRandom.Logger.LogInfo($"{character} in {msg.playerNr} list");
+                SuperRandomTweak.Logger.LogInfo($"{character} in {msg.playerNr} list");
             }
-            SuperRandom.randomCharacters[msg.playerNr] = characterList;
+            SuperRandomTweak.randomCharacters[msg.playerNr] = characterList;
         }
     }
 }

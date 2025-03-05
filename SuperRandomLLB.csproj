@@ -33,6 +33,9 @@
     <Reference Include="LLBModdingLib">
       <HintPath>C:\Users\sammo\AppData\Roaming\r2modmanPlus-local\LethalLeagueBlaze\profiles\Default\BepInEx\plugins\Glomzubuk-LLBModdingLib\LLBModdingLib\LLBModdingLib.dll</HintPath>
     </Reference>
+    <Reference Include="LLBTweaker">
+      <HintPath>C:\Users\sammo\AppData\Roaming\r2modmanPlus-local\LethalLeagueBlaze\profiles\Default\BepInEx\plugins\Glomzubuk-LLBTweaker\LLBTweaker\LLBTweaker.dll</HintPath>
+    </Reference>
     <Reference Include="UnityEngine.CoreModule">
       <HintPath>..\..\SteamLibrary\steamapps\common\LLBlaze\LLBlaze_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
     </Reference>

@@ -49,7 +49,7 @@ namespace SuperRandom
             GameObject corpseGo = new GameObject();
             CorpseEntity newCorpse = corpseGo.AddComponent<CorpseEntity>();
 
-            SuperRandom.Logger.LogInfo("Initializing new corpse");
+            SuperRandomTweak.Logger.LogInfo("Initializing new corpse");
             newCorpse.Init(itemHandler.itemHandlerData.corpseItemsData[index]);
 
             PlayerEntity playerEntity = Player.GetPlayer(index).playerEntity;

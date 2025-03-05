@@ -19,11 +19,11 @@ namespace SuperRandom
         [HarmonyPostfix]
         private static void Init(int _playerNr)
         {
-            SuperRandom.Instance.CreateUI();
+            SuperRandom.Instance.superRandomTweak.CreateUI();
 
-            if (SuperRandom.sRToggled)
+            if (SuperRandomTweak.sRToggled)
             {
-                SuperRandom.Instance.EnableSuperRandomMode();
+                SuperRandom.Instance.superRandomTweak.EnableSuperRandomMode();
 
             }
         }
@@ -33,14 +33,14 @@ namespace SuperRandom
         [HarmonyPrefix]
         private static void Prefix_OnOpen(ScreenPlayers __instance)
         {
-            SuperRandom.sP = __instance;
+            SuperRandomTweak.sP = __instance;
             
         }
        
 
         private static void ResetHud(PlayerEntity __instance)
         {
-            SuperRandom.Logger.LogInfo("Resetting Hud starting");
+            SuperRandomTweak.Logger.LogInfo("Resetting Hud starting");
             var playerInfo = ScreenGameHud.instance.playerInfos[__instance.playerIndex];
             int count = playerInfo.transform.childCount;
             GameObject.Destroy(playerInfo.transform.GetChild(count - 1).gameObject);
@@ -51,32 +51,32 @@ namespace SuperRandom
         {
             if (currentEntity == null)
             {
-                SuperRandom.Logger.LogError("ResetNextCharacter: currentEntity is null!");
+                SuperRandomTweak.Logger.LogError("ResetNextCharacter: currentEntity is null!");
                 return null;
             }
 
 
-            SuperRandom.Logger.LogInfo("ResetNextCharacter starting");
+            SuperRandomTweak.Logger.LogInfo("ResetNextCharacter starting");
 
             Player player = currentEntity.player;
 
             int playerNr = player.nr;
 
-            SuperRandom.Logger.LogInfo($"Player {player.nr} has died");
+            SuperRandomTweak.Logger.LogInfo($"Player {player.nr} has died");
 
             
 
             var handler = World.instance.playerHandler;
-            if (SuperRandom.randomCharacters[player.nr] == null )
+            if (SuperRandomTweak.randomCharacters[player.nr] == null )
             {
                 return currentEntity;
             }
-            var entityList = SuperRandom.randomCharacters[player.nr];
+            var entityList = SuperRandomTweak.randomCharacters[player.nr];
 
-            SuperRandom.Logger.LogInfo($"current death count : {currentEntity.playerData.deaths}");
+            SuperRandomTweak.Logger.LogInfo($"current death count : {currentEntity.playerData.deaths}");
             if (entityList == null || entityList.Count == 0)
             {
-                SuperRandom.Logger.LogError($"ResetNextCharacter: entityList for player {player.nr} is null or empty!");
+                SuperRandomTweak.Logger.LogError($"ResetNextCharacter: entityList for player {player.nr} is null or empty!");
                 return currentEntity;
             }
             
@@ -90,7 +90,7 @@ namespace SuperRandom
             }
             
 
-            if (currentEntity.playerData.deaths >= SuperRandom.numberOfStocks)
+            if (currentEntity.playerData.deaths >= SuperRandomTweak.numberOfStocks)
             {
                 return currentEntity;
             }
@@ -101,7 +101,7 @@ namespace SuperRandom
 
             if (JOMBNFKIHIC.GIGAKBJGFDI.KOBEJOIALMO && currentEntity.playerData.deaths > 12) //Points is True
             {
-                 character = entityList[ControlledRandom.Get(0, 0, SuperRandom.randomCharacters[player.nr].Count)];
+                 character = entityList[ControlledRandom.Get(0, 0, SuperRandomTweak.randomCharacters[player.nr].Count)];
             }
             else 
             {
@@ -117,11 +117,11 @@ namespace SuperRandom
             newPlayerEntity.playerData.deaths = currentEntity.playerData.deaths;
 
 
-            SuperRandom.Logger.LogInfo($"new death count : {newPlayerEntity.playerData.deaths}");
+            SuperRandomTweak.Logger.LogInfo($"new death count : {newPlayerEntity.playerData.deaths}");
 
             player.Character = newPlayerEntity.character;
 
-            SuperRandom.Logger.LogInfo($"Setting {player.nr} to {player.Character}");
+            SuperRandomTweak.Logger.LogInfo($"Setting {player.nr} to {player.Character}");
 
             newPlayerEntity.playerData.stocks = prevStocks;
             newPlayerEntity.entityID = player.playerEntity.entityID;
@@ -146,11 +146,11 @@ namespace SuperRandom
             bool found = false;
             Player.ForAllInMatch((Player player) =>
             {
-                if (SuperRandom.randomCharacters[player.nr] == null)
+                if (SuperRandomTweak.randomCharacters[player.nr] == null)
                 {
                     return;
                 }
-                if (SuperRandom.randomCharacters[player.nr].Contains(Character.SKATE))
+                if (SuperRandomTweak.randomCharacters[player.nr].Contains(Character.SKATE))
                 {
                     found = true;
                 }
@@ -165,11 +165,11 @@ namespace SuperRandom
             bool found = false;
             Player.ForAllInMatch((Player player) =>
             {
-                if (SuperRandom.randomCharacters[player.nr] == null)
+                if (SuperRandomTweak.randomCharacters[player.nr] == null)
                 {
                     return;
                 }
-                if (SuperRandom.randomCharacters[player.nr].Contains(Character.COP) && (player.variant == CharacterVariant.MODEL_ALT || player.variant == CharacterVariant.MODEL_ALT2))
+                if (SuperRandomTweak.randomCharacters[player.nr].Contains(Character.COP) && (player.variant == CharacterVariant.MODEL_ALT || player.variant == CharacterVariant.MODEL_ALT2))
                     found = true;
             });
             return found;
@@ -179,7 +179,7 @@ namespace SuperRandom
             bool found = false;
             Player.ForAllInMatch((Player player) =>
             {
-                if (SuperRandom.randomCharacters[player.nr] == null)
+                if (SuperRandomTweak.randomCharacters[player.nr] == null)
                 {
                     return;
                 }
@@ -189,21 +189,7 @@ namespace SuperRandom
             return found;
         }
 
-        //DAIO CRIMES
-        [HarmonyPatch(typeof(ALDOKEMAOMB), nameof(ALDOKEMAOMB.CHDHDGAHNPB))]
-        [HarmonyTranspiler]
-        static IEnumerable<CodeInstruction> ChangeRandomVariant(IEnumerable<CodeInstruction> instructions)
-        {
-            CodeMatcher cm = new CodeMatcher(instructions);
-            cm.SearchForward(iL => iL.opcode == OpCodes.Stfld && ((FieldInfo)iL.operand).Name == nameof(ALDOKEMAOMB.AIINAIDBHJI))
-                .Advance(-3);
-
-            cm.RemoveInstructions(3);
-
-            cm.Insert(new CodeInstruction(OpCodes.Ldc_I4_S, (sbyte)CharacterVariant.MODEL_ALT3));
-
-            return cm.InstructionEnumeration();
-        }
+        
 
         [HarmonyPatch(typeof(BallEntity), nameof(BallEntity.AddExtraBallVisuals))]
         [HarmonyTranspiler]
@@ -253,14 +239,14 @@ namespace SuperRandom
 
             Player.ForAllInMatch((Player player) =>
             {
-                if (SuperRandom.randomCharacters[player.nr] == null)
+                if (SuperRandomTweak.randomCharacters[player.nr] == null)
                 {
                     return;
                 }
                 var playerVariants = player.variant;
 
-                SuperRandom.Logger.LogInfo("AddingCandyAnims");
-                foreach (var character in SuperRandom.randomCharacters[player.nr])
+                SuperRandomTweak.Logger.LogInfo("AddingCandyAnims");
+                foreach (var character in SuperRandomTweak.randomCharacters[player.nr])
                 {
                     candies.Add(playerVariants);
 
