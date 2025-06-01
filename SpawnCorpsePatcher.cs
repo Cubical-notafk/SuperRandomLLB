@@ -19,7 +19,6 @@ namespace SuperRandom
         }
 
         [HarmonyTranspiler]
-        [HarmonyDebug]
         private static IEnumerable<CodeInstruction> SpawnCorpse_Transpiler(IEnumerable<CodeInstruction> instructions)
         {
             CodeMatcher cm = new CodeMatcher(instructions);
@@ -49,7 +48,7 @@ namespace SuperRandom
             GameObject corpseGo = new GameObject();
             CorpseEntity newCorpse = corpseGo.AddComponent<CorpseEntity>();
 
-            SuperRandomTweak.Logger.LogInfo("Initializing new corpse");
+            SuperRandom.Log.LogDebug("Initializing new corpse");
             newCorpse.Init(itemHandler.itemHandlerData.corpseItemsData[index]);
 
             PlayerEntity playerEntity = Player.GetPlayer(index).playerEntity;

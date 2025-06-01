@@ -24,23 +24,27 @@ namespace SuperRandom
     
     public class SuperRandomTweak : HarmonyTweak
     {
+        
         public SuperRandomTweak() : base ("superRandom-tweak", "superRandom")
         {
+            SuperRandom.Log.LogInfo("SuperRandomTweak constructor started");
+
             this.AddPatchClass(typeof(AddPlayersToWorldPatch));
+            this.AddPatchClass(typeof(LoadBundles));
             this.AddPatchClass(typeof(SpawnPlayerPatcher));
             this.AddPatchClass(typeof(SpawnCorpsePatcher));
+
+            SuperRandom.Log.LogInfo("SuperRandomTweak constructor completed");
         }
-        
-        Harmony harmony = new Harmony(MyPluginInfo.PLUGIN_GUID);
 
-        public static SuperRandom Instance { get; private set; } = null;
+#if DEBUG
 
-        public ConfigEntry<bool> superRandomOn;
+        public static void Method()
+        {
 
-        public ConfigEntry<bool> useKarmicRandom;
-        public ConfigEntry<bool> resetWeightButton;
-        public ConfigEntry<KeyCode> SwapCharacterInTrainingKey;
-        public ConfigEntry<KeyCode> ResetWeightsKey;
+        }
+
+#endif
 
         public LLButton superRandomButton;
         public LLButton allowRepeatsButton;
@@ -71,9 +75,10 @@ namespace SuperRandom
 
         public override void Start()
         {
+            LLBML.GameEvents.LobbyEvents.OnDecisions += (source, args) =>
+                LLBML.Utils.DebugUtils.DecisionsToString(args.decisions);
 
-
-            Logger.LogInfo("SuperRandom Started");
+            SuperRandom.Log.LogInfo("SuperRandom Started");
 
             ModDependenciesUtils.RegisterToModMenu(SuperRandom.Instance.Info, new List<String> {
                 "<b>Testing</b>:",
@@ -89,16 +94,7 @@ namespace SuperRandom
 
 
         }
-        public void ConfigInit()
-        {
-
-            superRandomOn = Config.Bind<bool>("Toggles", "SuperRandomOn", true);
-
-            useKarmicRandom = Config.Bind<bool>("Toggles", "UseKarmicRandom", true);
-            resetWeightButton = Config.Bind<bool>("Toggles", "ResetKarmaWeights", false);
-            SwapCharacterInTrainingKey = Config.Bind("Keybinds", "swapCharacterInTrainingKey", KeyCode.Q);
-            ResetWeightsKey = Config.Bind("Keybinds", "resetWeightsKey", KeyCode.W);
-        }
+       
 
 
         public override void FixedUpdate()
@@ -110,41 +106,52 @@ namespace SuperRandom
            
         }
 
-      
+        protected override void DoPatch()
+        {
+            base.DoPatch();
+            
+        }
+
+        protected override void DoUnpatch()
+        {
+            base.DoUnpatch();
+            
+        }
 
 
-        private bool uiCreated = false;
+
+        
 
         public override void Update()
         {
-            if (JOMBNFKIHIC.GIGAKBJGFDI.PNJOKAICMNN == GameMode.TRAINING)
+            if (GameStates.IsInMatch())
             {
-                Player player = Player.GetPlayer(0);
-
-                if (randomCharacters != null)
+                if (JOMBNFKIHIC.GIGAKBJGFDI.PNJOKAICMNN == GameMode.TRAINING)
                 {
+                    Player player = Player.GetPlayer(0);
 
-                    if (Input.GetKeyDown(SwapCharacterInTrainingKey.Value))
+                    if (randomCharacters != null)
                     {
-                        player.playerEntity.playerData.deaths++;
-                        if(player.playerEntity.playerData.deaths >= 4)
+
+                        if (Input.GetKeyDown(SuperRandom.Instance.SwapCharacterInTrainingKey.Value))
                         {
-                            player.playerEntity.playerData.deaths = 0;
+                            player.playerEntity.playerData.deaths++;
+                            if (player.playerEntity.playerData.deaths >= 4)
+                            {
+                                player.playerEntity.playerData.deaths = 0;
+                            }
+                            AddPlayersToWorldPatch.ResetNextCharacter(player.playerEntity);
+                            player.playerEntity.Spawn();
                         }
-                        AddPlayersToWorldPatch.ResetNextCharacter(player.playerEntity);
-                        player.playerEntity.Spawn();
                     }
                 }
             }
-            if (GameStates.IsInLobby() && Input.GetKeyDown(ResetWeightsKey.Value))
+            if (GameStates.IsInLobby() && Input.GetKeyDown(SuperRandom.Instance.ResetWeightsKey.Value))
             {
                 ResetWeights();
             }
 
-            if(this.IsEnabled)
-            {
-
-            }
+            
 
 
         }
@@ -174,7 +181,7 @@ namespace SuperRandom
 
             var playerNr = Player.GetLocalPlayer().nr;
 
-            Logger.LogInfo("running overlaybuttons");
+           
 
             OverlayButtonsON(playerNr);
 
@@ -185,10 +192,10 @@ namespace SuperRandom
 
 
 
-            if (resetWeightButton.Value)
+            if (SuperRandom.Instance.resetWeightButton.Value)
             {
                 ResetWeights();
-                resetWeightButton.Value = false;
+                SuperRandom.Instance.resetWeightButton.Value = false;
             }
         }
 
@@ -196,6 +203,7 @@ namespace SuperRandom
         #region UIMaker
         public void CreateUI()
         {
+            
             if (superRandomButton == null || !superRandomButton.gameObject.activeInHierarchy)
             {
                
@@ -248,7 +256,7 @@ namespace SuperRandom
             {
                 playerNr = 0;
             }
-            Logger.LogInfo($"Player {playerNr} clicked");
+            
 
             sRToggled = !sRToggled;
 
@@ -265,7 +273,7 @@ namespace SuperRandom
                 emptyParent.SetActive(true);
                 emptyParent.transform.localScale = Vector3.one;
                 superRandomButton.SetText("Super Random !!!");
-                Debug.Log("Super Random is ON");
+                SuperRandom.Log.LogDebug("Super Random is ON");
                 OverlayButtonsON(playerNr);
 
                 allowRepeatsButton.SetActive(true);
@@ -279,7 +287,7 @@ namespace SuperRandom
                 allowRepeatsButton.visible = false;
                 emptyParent.SetActive(false);
                 superRandomButton.SetText("Super Random ???");
-                Debug.Log("Super Random is OFF");
+                SuperRandom.Log.LogDebug("Super Random is OFF");
                 OverlayButtonsOFF();
             }
         }
@@ -288,7 +296,7 @@ namespace SuperRandom
         public void OverlayButtonsON(int playerNr)
         {
             playerNr = Player.GetLocalPlayer().nr;
-            Debug.Log($"OverlayButtonsON called for Player {playerNr}");
+            
             if (playerNr == -1)
             {
                 playerNr = 0;
@@ -400,13 +408,13 @@ namespace SuperRandom
 
         public void OverlayButtonsOFF()
         {
-            Debug.Log("Hiding all character buttons.");
+            SuperRandom.Log.LogInfo("Hiding all character buttons.");
             foreach (Transform child in sP.btOptions.transform.parent)
             {
 
                 if (child.name.StartsWith("CharacterButton"))
                 {
-                    Debug.Log($"Hiding {child.name}");
+                    
                     child.gameObject.SetActive(false);
                 }
             }
@@ -468,7 +476,7 @@ namespace SuperRandom
         }
         public void SetUseKarmicRandom(bool value)
         {
-            useKarmicRandom.Value = value;
+            SuperRandom.Instance.useKarmicRandom.Value = value;
         }
 
         public void HandleOverlay(int playerNr, Character character, PlayersCharacterButton component)
@@ -483,7 +491,7 @@ namespace SuperRandom
 
             if (!addedCharacters[playerNr].Contains(character))
             {
-                Logger.LogInfo($"Added {character} character for {playerNr}");
+                SuperRandom.Log.LogDebug($"Added {character} character for {playerNr}");
                 addedCharacters[playerNr].Add(character);
                 characterWeights[character] = 1f;
                 buttonImage.color = Color.white;
@@ -492,7 +500,7 @@ namespace SuperRandom
             }
             else
             {
-                Logger.LogInfo($"Removed {character}");
+                SuperRandom.Log.LogDebug($"Removed {character}");
                 addedCharacters[playerNr].Remove(character);
                 characterWeights.Remove(character);
                 buttonImage.color = Color.Lerp(Color.white, Color.black, 0.75f);
@@ -505,12 +513,12 @@ namespace SuperRandom
         }
         public static List<Character> GetRandomChars(int playerNr)
         {
-            return SuperRandom.Instance.superRandomTweak.GetRandomCharacters(playerNr);
+            return SuperRandom.superRandomTweak.GetRandomCharacters(playerNr);
         }
 
         public List<Character> GetRandomCharacters(int playerNr)
         {
-            return GetRandomCharacters(numberOfStocks, allowRepeats, useKarmicRandom.Value, playerNr);
+            return GetRandomCharacters(numberOfStocks, allowRepeats, SuperRandom.Instance.useKarmicRandom.Value, playerNr);
         }
 
         public List<Character> GetRandomCharacters(int count, bool allowRepeats, bool useKarmicRandom, int playerNR)
@@ -565,10 +573,10 @@ namespace SuperRandom
                 }
             }
 
-            Debug.Log("Selected characters: ");
+            SuperRandom.Log.LogInfo("Selected characters: ");
             foreach (var character in selectedCharacters)
             {
-                Debug.Log("Character: " + character);
+                SuperRandom.Log.LogInfo("Character: " + character);
             }
 
             allowRepeats = originalAllowRepeats;
@@ -598,7 +606,7 @@ namespace SuperRandom
             {
                 characterWeights[character] *= decayFactor;
 
-                Debug.Log($"Character {character} weight reduced to: {characterWeights[character]}");
+                SuperRandom.Log.LogInfo($"Character {character} weight reduced to: {characterWeights[character]}");
 
                 if (characterWeights[character] < minWeight)
                     characterWeights[character] = minWeight;
@@ -611,7 +619,7 @@ namespace SuperRandom
             {
                 characterWeights[key] = 1f;
             }
-            Debug.Log("Character weights have been reset to 1.");
+            SuperRandom.Log.LogInfo("Character weights have been reset to 1.");
 
 
         }

@@ -15,54 +15,42 @@ namespace SuperRandom
     public static class AddPlayersToWorldPatch
     {
 
-        [HarmonyPatch(typeof(PlayersSelection), nameof(PlayersSelection.Init))]
-        [HarmonyPostfix]
-        private static void Init(int _playerNr)
-        {
-            SuperRandom.Instance.superRandomTweak.CreateUI();
-
-            if (SuperRandomTweak.sRToggled)
-            {
-                SuperRandom.Instance.superRandomTweak.EnableSuperRandomMode();
-
-            }
-        }
-
-
-        [HarmonyPatch(typeof(ScreenPlayers), nameof(ScreenPlayers.OnOpen))]
-        [HarmonyPrefix]
-        private static void Prefix_OnOpen(ScreenPlayers __instance)
-        {
-            SuperRandomTweak.sP = __instance;
-            
-        }
-       
-
         private static void ResetHud(PlayerEntity __instance)
         {
-            SuperRandomTweak.Logger.LogInfo("Resetting Hud starting");
+            SuperRandom.Log.LogDebug("Resetting Hud starting");
             var playerInfo = ScreenGameHud.instance.playerInfos[__instance.playerIndex];
             int count = playerInfo.transform.childCount;
-            GameObject.Destroy(playerInfo.transform.GetChild(count - 1).gameObject);
+            
+            for (int i = count - 1; i >= 0; i--)
+            {
+                var child = playerInfo.transform.GetChild(i);
+                if (child.name.Contains("Head"))
+                {
+                    GameObject.Destroy(child.gameObject);
+                    break;
+                }
+            }
             playerInfo.SetPlayer(__instance.player, 12);
         }
 
+        
         public static PlayerEntity ResetNextCharacter(PlayerEntity currentEntity)
         {
+
             if (currentEntity == null)
             {
-                SuperRandomTweak.Logger.LogError("ResetNextCharacter: currentEntity is null!");
+                SuperRandom.Log.LogDebug("ResetNextCharacter: currentEntity is null!");
                 return null;
             }
 
 
-            SuperRandomTweak.Logger.LogInfo("ResetNextCharacter starting");
+            SuperRandom.Log.LogDebug("ResetNextCharacter starting");
 
             Player player = currentEntity.player;
 
             int playerNr = player.nr;
 
-            SuperRandomTweak.Logger.LogInfo($"Player {player.nr} has died");
+            SuperRandom.Log.LogDebug($"Player {player.nr} has died");
 
             
 
@@ -73,10 +61,10 @@ namespace SuperRandom
             }
             var entityList = SuperRandomTweak.randomCharacters[player.nr];
 
-            SuperRandomTweak.Logger.LogInfo($"current death count : {currentEntity.playerData.deaths}");
+            SuperRandom.Log.LogDebug($"current death count : {currentEntity.playerData.deaths}");
             if (entityList == null || entityList.Count == 0)
             {
-                SuperRandomTweak.Logger.LogError($"ResetNextCharacter: entityList for player {player.nr} is null or empty!");
+                SuperRandom.Log.LogDebug($"ResetNextCharacter: entityList for player {player.nr} is null or empty!");
                 return currentEntity;
             }
             
@@ -117,12 +105,13 @@ namespace SuperRandom
             newPlayerEntity.playerData.deaths = currentEntity.playerData.deaths;
 
 
-            SuperRandomTweak.Logger.LogInfo($"new death count : {newPlayerEntity.playerData.deaths}");
+            SuperRandom.Log.LogDebug($"new death count : {newPlayerEntity.playerData.deaths}");
 
             player.Character = newPlayerEntity.character;
 
-            SuperRandomTweak.Logger.LogInfo($"Setting {player.nr} to {player.Character}");
+            SuperRandom.Log.LogDebug($"Setting {player.nr} to {player.Character}");
 
+            newPlayerEntity.playerData.specialAmount = 0;
             newPlayerEntity.playerData.stocks = prevStocks;
             newPlayerEntity.entityID = player.playerEntity.entityID;
 
@@ -193,7 +182,6 @@ namespace SuperRandom
 
         [HarmonyPatch(typeof(BallEntity), nameof(BallEntity.AddExtraBallVisuals))]
         [HarmonyTranspiler]
-        [HarmonyDebug]
         static IEnumerable<CodeInstruction> AddExtraVisual_Transpiler(IEnumerable<CodeInstruction> instructions, ILGenerator iL)
         {
             CodeMatcher cm = new CodeMatcher(instructions, iL);
@@ -245,7 +233,7 @@ namespace SuperRandom
                 }
                 var playerVariants = player.variant;
 
-                SuperRandomTweak.Logger.LogInfo("AddingCandyAnims");
+                SuperRandom.Log.LogInfo("AddingCandyAnims");
                 foreach (var character in SuperRandomTweak.randomCharacters[player.nr])
                 {
                     candies.Add(playerVariants);
